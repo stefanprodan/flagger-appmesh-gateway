@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: envoy
+  labels:
+    app: envoy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: envoy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: envoy
+    spec:
+      serviceAccountName: envoy
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: envoy
+          image: "envoyproxy/envoy:v1.11.1"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - /docker-entrypoint.sh envoy --service-node ${POD_NAME} --service-cluster envoy --base-id 1234 -l info -c /config/envoy.yaml
+          ports:
+            - name: admin
+              containerPort: 9901
+              protocol: TCP
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 5
+            tcpSocket:
+              port: admin
+          readinessProbe:
+            initialDelaySeconds: 5
+            tcpSocket:
+              port: admin
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+        - name: kxds
+          image: stefanprodan/kxds:0.0.1
+          command:
+            - ./kxds
+          args:
+            - serve
+            - --port=18000
+          ports:
+            - name: grpc
+              containerPort: 18000
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 5
+            tcpSocket:
+              port: grpc
+          readinessProbe:
+            initialDelaySeconds: 5
+            tcpSocket:
+              port: grpc
+      volumes:
+        - name: config
+          configMap:
+            name: envoy

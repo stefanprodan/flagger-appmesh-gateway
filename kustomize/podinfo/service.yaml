@@ -4,6 +4,9 @@ metadata:
   name: podinfo
   labels:
     app: podinfo
+  annotations:
+    envoy.gateway.kubernetes.io/host: "podinfo.local"
+    envoy.gateway.kubernetes.io/timeout: "25s"
 spec:
   type: ClusterIP
   selector:

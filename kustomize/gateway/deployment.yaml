@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: envoy
+  name: gateway
   labels:
-    app: envoy
+    app: gateway
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: envoy
+      app: gateway
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,16 +17,16 @@ spec:
   template:
     metadata:
       labels:
-        app: envoy
+        app: gateway
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/stats/prometheus"
-        prometheus.io/port: "9901"
+        prometheus.io/port: "8081"
     spec:
-      serviceAccountName: envoy
+      serviceAccountName: gateway
       terminationGracePeriodSeconds: 10
       containers:
-        - name: envoy
+        - name: gateway
           image: "envoyproxy/envoy:v1.11.1"
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -42,7 +42,7 @@ spec:
             - /docker-entrypoint.sh envoy --service-node ${POD_NAME} --service-cluster envoy --base-id 1234 -l info -c /config/envoy.yaml
           ports:
             - name: admin
-              containerPort: 9901
+              containerPort: 8081
               protocol: TCP
             - name: http
               containerPort: 8080

@@ -18,6 +18,10 @@ spec:
     metadata:
       labels:
         app: envoy
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/stats/prometheus"
+        prometheus.io/port: "9901"
     spec:
       serviceAccountName: envoy
       terminationGracePeriodSeconds: 10
@@ -25,6 +29,12 @@ spec:
         - name: envoy
           image: "envoyproxy/envoy:v1.11.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
           command:
             - /bin/sh
           args:
@@ -63,6 +73,13 @@ spec:
               mountPath: /config
         - name: kxds
           image: stefanprodan/kxds:0.0.1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
           command:
             - ./kxds
           args:

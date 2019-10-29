@@ -5,8 +5,10 @@ metadata:
   labels:
     app: podinfo
   annotations:
-    envoy.gateway.kubernetes.io/host: "podinfo.local"
+    envoy.gateway.kubernetes.io/expose: "true"
     envoy.gateway.kubernetes.io/timeout: "25s"
+    envoy.gateway.kubernetes.io/retries: "5"
+    envoy.gateway.kubernetes.io/domain: "podinfo.local"
 spec:
   type: ClusterIP
   selector:

@@ -22,6 +22,8 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/stats/prometheus"
         prometheus.io/port: "8081"
+        # exclude inbound traffic from App Mesh
+        appmesh.k8s.aws/ports: "444"
     spec:
       serviceAccountName: gateway
       terminationGracePeriodSeconds: 10
@@ -72,7 +74,7 @@ spec:
             - name: config
               mountPath: /config
         - name: kxds
-          image: stefanprodan/kxds:0.0.1
+          image: stefanprodan/kxds:0.0.2
           imagePullPolicy: IfNotPresent
           securityContext:
             capabilities:

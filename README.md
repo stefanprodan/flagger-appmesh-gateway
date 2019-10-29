@@ -1,4 +1,4 @@
-# kxds
+# KxDS
 
 KxDS is an Envoy discovery service implementation for Kubernetes.
 KxDS runs as a sidecar next to Envoy and configures the proxy to expose Kubernetes services.
@@ -14,4 +14,17 @@ KxDS runs as a sidecar next to Envoy and configures the proxy to expose Kubernet
 
 ```sh
 kubectl apply -k github.com/stefanprodan/kxds//kustomize/gateway
+```
+
+### Annotations
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    envoy.gateway.kubernetes.io/expose: "true"
+    envoy.gateway.kubernetes.io/timeout: "25s"
+    envoy.gateway.kubernetes.io/retries: "5"
+    envoy.gateway.kubernetes.io/domain: "app.internal"
 ```

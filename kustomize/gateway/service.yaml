@@ -6,6 +6,7 @@ metadata:
     app: gateway
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    envoy.gateway.kubernetes.io/expose: "false"
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local

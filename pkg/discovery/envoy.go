@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -26,6 +27,15 @@ type EnvoyConfig struct {
 	upstreams *sync.Map
 }
 
+type Upstream struct {
+	Name    string
+	Host    string
+	Domain  string
+	Prefix  string
+	Retries uint32
+	Timeout time.Duration
+}
+
 func NewEnvoyConfig(cache cache.SnapshotCache) *EnvoyConfig {
 	return &EnvoyConfig{
 		version:   0,
@@ -48,24 +58,30 @@ func (e *EnvoyConfig) Sync() {
 	var listeners []cache.Resource
 	var clusters []cache.Resource
 	var vhosts []*route.VirtualHost
-	domains := make(map[string]string)
+	domains := make(map[string]Upstream)
 	e.upstreams.Range(func(key interface{}, value interface{}) bool {
 		item := key.(string)
 		service := value.(corev1.Service)
 		portName := "http"
-		timeout := 25000
-		cluster := serviceToCluster(service, portName, timeout)
+		ok, upstream := serviceToUpstream(service)
+		if !ok {
+			klog.Infof("service %s excluded, due to annotation", item)
+			return true
+		}
+
+		cluster := serviceToCluster(service, portName, 5000)
 		if cluster != nil {
+			upstream.Name = cluster.Name
 			clusters = append(clusters, cluster)
-			domains[cluster.Name] = fmt.Sprintf("%s.%s", service.Name, service.Namespace)
+			domains[cluster.Name] = upstream
 		} else {
 			klog.Infof("service %s excluded, no port named '%s' found", item, portName)
 		}
 		return true
 	})
 
-	for cluster, domain := range domains {
-		vh := makeVirtualHost(cluster, domain, "/", cluster, uint32(1))
+	for cluster, up := range domains {
+		vh := makeVirtualHost(cluster, up)
 		vhosts = append(vhosts, &vh)
 	}
 
@@ -129,16 +145,16 @@ func makeAddress(address string, port uint32) *ecore.Address {
 	}}
 }
 
-func makeVirtualHost(name string, domain string, prefix string, clusterName string, retries uint32) route.VirtualHost {
+func makeVirtualHost(name string, upstream Upstream) route.VirtualHost {
 	r := &route.Route{
-		Match:  makeRouteMatch(prefix),
-		Action: makeRouteAction(domain, clusterName),
+		Match:  makeRouteMatch(upstream.Prefix),
+		Action: makeRouteAction(name, upstream.Timeout, upstream.Host),
 	}
 	return route.VirtualHost{
 		Name:        name,
-		Domains:     []string{domain},
+		Domains:     []string{upstream.Domain},
 		Routes:      []*route.Route{r},
-		RetryPolicy: makeRetryPolicy(retries),
+		RetryPolicy: makeRetryPolicy(upstream.Retries),
 	}
 }
 
@@ -158,15 +174,16 @@ func makeRouteMatch(prefix string) *route.RouteMatch {
 	}
 }
 
-func makeRouteAction(domain string, cluster string) *route.Route_Route {
+func makeRouteAction(cluster string, timeout time.Duration, hostRewrite string) *route.Route_Route {
 	return &route.Route_Route{
 		Route: &route.RouteAction{
 			HostRewriteSpecifier: &route.RouteAction_HostRewrite{
-				HostRewrite: domain,
+				HostRewrite: hostRewrite,
 			},
 			ClusterSpecifier: &route.RouteAction_Cluster{
 				Cluster: cluster,
 			},
+			Timeout: ptypes.DurationProto(timeout),
 		},
 	}
 }
@@ -205,4 +222,42 @@ func makeListener(name, address string, port uint32, cm *hcm.HttpConnectionManag
 			}},
 		}},
 	}, nil
+}
+
+func serviceToUpstream(svc corev1.Service) (bool, Upstream) {
+	expose := true
+	up := Upstream{
+		Domain:  fmt.Sprintf("%s.%s", svc.Name, svc.Namespace),
+		Host:    fmt.Sprintf("%s.%s", svc.Name, svc.Namespace),
+		Prefix:  "/",
+		Retries: 1,
+		Timeout: 15 * time.Second,
+	}
+
+	exposeAn := "envoy.gateway.kubernetes.io/expose"
+	domainAn := "envoy.gateway.kubernetes.io/domain"
+	timeoutAn := "envoy.gateway.kubernetes.io/timeout"
+	retriesAn := "envoy.gateway.kubernetes.io/retries"
+
+	for key, value := range svc.Annotations {
+		if key == exposeAn && value == "false" {
+			expose = false
+		}
+		if key == domainAn {
+			up.Domain = value
+		}
+		if key == timeoutAn {
+			d, err := time.ParseDuration(value)
+			if err == nil {
+				up.Timeout = d
+			}
+		}
+		if key == retriesAn {
+			r, err := strconv.Atoi(value)
+			if err == nil {
+				up.Retries = uint32(r)
+			}
+		}
+	}
+	return expose, up
 }

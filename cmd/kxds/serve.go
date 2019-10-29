@@ -17,12 +17,14 @@ var masterURL string
 var kubeConfig string
 var port int
 var namespace string
+var ads bool
 
 func init() {
 	serveCmd.Flags().StringVarP(&masterURL, "master", "", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 	serveCmd.Flags().StringVarP(&kubeConfig, "kubeconfig", "", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	serveCmd.Flags().IntVarP(&port, "port", "p", 18000, "Port to listen on.")
 	serveCmd.Flags().StringVarP(&namespace, "namespace", "", "", "Namespace to watch for Kubernetes service.")
+	serveCmd.Flags().BoolVarP(&ads, "ads", "", false, "ADS flag forces a delay in responding to streaming requests until all resources are explicitly named in the request.")
 
 	rootCmd.AddCommand(serveCmd)
 }
@@ -47,7 +49,7 @@ func serve(cmd *cobra.Command, args []string) error {
 	stopCh := signals.SetupSignalHandler()
 	ctx := context.Background()
 
-	cache := discovery.NewCache()
+	cache := discovery.NewCache(ads)
 
 	srv := server.NewServer(port, cache)
 	go srv.Serve(ctx)

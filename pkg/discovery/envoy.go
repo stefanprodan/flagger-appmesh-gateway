@@ -35,6 +35,13 @@ type Upstream struct {
 	Prefix  string
 	Retries uint32
 	Timeout time.Duration
+	Canary  *Canary
+}
+
+type Canary struct {
+	PrimaryCluster string
+	CanaryCluster  string
+	CanaryWeight   int
 }
 
 func NewEnvoyConfig(cache cache.SnapshotCache) *EnvoyConfig {
@@ -148,10 +155,50 @@ func makeAddress(address string, port uint32) *ecore.Address {
 }
 
 func makeVirtualHost(name string, upstream Upstream) route.VirtualHost {
-	r := &route.Route{
-		Match:  makeRouteMatch(upstream.Prefix),
-		Action: makeRouteAction(name, upstream.Timeout, upstream.Host),
+	action := &route.RouteAction{
+		HostRewriteSpecifier: &route.RouteAction_HostRewrite{
+			HostRewrite: upstream.Host,
+		},
+		ClusterSpecifier: &route.RouteAction_Cluster{
+			Cluster: name,
+		},
+		Timeout: ptypes.DurationProto(upstream.Timeout),
 	}
+
+	if upstream.Canary != nil && upstream.Canary.CanaryCluster != "" && upstream.Canary.PrimaryCluster != "" {
+		action = &route.RouteAction{
+			HostRewriteSpecifier: &route.RouteAction_HostRewrite{
+				HostRewrite: upstream.Host,
+			},
+			ClusterSpecifier: &route.RouteAction_WeightedClusters{
+				WeightedClusters: &route.WeightedCluster{
+					Clusters: []*route.WeightedCluster_ClusterWeight{
+						{
+							Name:   upstream.Canary.CanaryCluster,
+							Weight: &wrappers.UInt32Value{Value: uint32(upstream.Canary.CanaryWeight)},
+						},
+						{
+							Name:   upstream.Canary.PrimaryCluster,
+							Weight: &wrappers.UInt32Value{Value: uint32(100 - upstream.Canary.CanaryWeight)},
+						},
+					},
+				},
+			},
+			Timeout: ptypes.DurationProto(upstream.Timeout),
+		}
+	}
+
+	r := &route.Route{
+		Match: &route.RouteMatch{
+			PathSpecifier: &route.RouteMatch_Prefix{
+				Prefix: upstream.Prefix,
+			},
+		},
+		Action: &route.Route_Route{
+			Route: action,
+		},
+	}
+
 	return route.VirtualHost{
 		Name:        name,
 		Domains:     []string{upstream.Domain},
@@ -174,28 +221,6 @@ func makeRetryPolicy(retries uint32) *route.RetryPolicy {
 		RetryOn:       "gateway-error,connect-failure,refused-stream",
 		PerTryTimeout: ptypes.DurationProto(5 * time.Second),
 		NumRetries:    &wrappers.UInt32Value{Value: retries},
-	}
-}
-
-func makeRouteMatch(prefix string) *route.RouteMatch {
-	return &route.RouteMatch{
-		PathSpecifier: &route.RouteMatch_Prefix{
-			Prefix: prefix,
-		},
-	}
-}
-
-func makeRouteAction(cluster string, timeout time.Duration, hostRewrite string) *route.Route_Route {
-	return &route.Route_Route{
-		Route: &route.RouteAction{
-			HostRewriteSpecifier: &route.RouteAction_HostRewrite{
-				HostRewrite: hostRewrite,
-			},
-			ClusterSpecifier: &route.RouteAction_Cluster{
-				Cluster: cluster,
-			},
-			Timeout: ptypes.DurationProto(timeout),
-		},
 	}
 }
 
@@ -243,13 +268,16 @@ func serviceToUpstream(svc corev1.Service) (bool, Upstream) {
 		Prefix:  "/",
 		Retries: 1,
 		Timeout: 15 * time.Second,
+		Canary:  &Canary{},
 	}
 
 	exposeAn := "envoy.gateway.kubernetes.io/expose"
 	domainAn := "envoy.gateway.kubernetes.io/domain"
 	timeoutAn := "envoy.gateway.kubernetes.io/timeout"
 	retriesAn := "envoy.gateway.kubernetes.io/retries"
-
+	primaryAn := "envoy.gateway.kubernetes.io/primary"
+	canaryAn := "envoy.gateway.kubernetes.io/canary"
+	canaryWeightAn := "envoy.gateway.kubernetes.io/canary-weight"
 	for key, value := range svc.Annotations {
 		if key == exposeAn && value == "false" {
 			expose = false
@@ -267,6 +295,18 @@ func serviceToUpstream(svc corev1.Service) (bool, Upstream) {
 			r, err := strconv.Atoi(value)
 			if err == nil {
 				up.Retries = uint32(r)
+			}
+		}
+		if key == primaryAn {
+			up.Canary.PrimaryCluster = value
+		}
+		if key == canaryAn {
+			up.Canary.CanaryCluster = value
+		}
+		if key == canaryWeightAn {
+			r, err := strconv.Atoi(value)
+			if err == nil {
+				up.Canary.CanaryWeight = r
 			}
 		}
 	}

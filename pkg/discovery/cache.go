@@ -6,8 +6,8 @@ import (
 	"k8s.io/klog"
 )
 
-func NewCache() cache.SnapshotCache {
-	return cache.NewSnapshotCache(true, Hasher{}, cacheLog{})
+func NewCache(ads bool) cache.SnapshotCache {
+	return cache.NewSnapshotCache(ads, Hasher{}, cacheLog{})
 }
 
 type Hasher struct {

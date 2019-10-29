@@ -30,6 +30,7 @@ type EnvoyConfig struct {
 type Upstream struct {
 	Name    string
 	Host    string
+	Port    uint32
 	Domain  string
 	Prefix  string
 	Retries uint32
@@ -69,9 +70,10 @@ func (e *EnvoyConfig) Sync() {
 			return true
 		}
 
-		cluster := serviceToCluster(service, portName, 5000)
+		cluster, port := serviceToCluster(service, portName, 5000)
 		if cluster != nil {
 			upstream.Name = cluster.Name
+			upstream.Port = port
 			clusters = append(clusters, cluster)
 			domains[cluster.Name] = upstream
 		} else {
@@ -96,19 +98,19 @@ func (e *EnvoyConfig) Sync() {
 	}
 }
 
-func serviceToCluster(svc corev1.Service, portName string, timeout int) *ev2.Cluster {
-	var port uint32
+func serviceToCluster(svc corev1.Service, portName string, timeout int) (cluster *ev2.Cluster, port uint32) {
 	for _, p := range svc.Spec.Ports {
 		if p.Name == portName {
 			port = uint32(p.Port)
 		}
 	}
 	if port == 0 {
-		return nil
+		return
 	}
 	name := fmt.Sprintf("%s-%s-%d", svc.Name, svc.Namespace, port)
 	address := fmt.Sprintf("%s.%s", svc.Name, svc.Namespace)
-	return makeCluster(name, address, port, timeout)
+	cluster = makeCluster(name, address, port, timeout)
+	return
 }
 
 func makeCluster(name string, address string, port uint32, timeout int) *ev2.Cluster {
@@ -155,6 +157,15 @@ func makeVirtualHost(name string, upstream Upstream) route.VirtualHost {
 		Domains:     []string{upstream.Domain},
 		Routes:      []*route.Route{r},
 		RetryPolicy: makeRetryPolicy(upstream.Retries),
+		RequestHeadersToAdd: []*ecore.HeaderValueOption{
+			{
+				Header: &ecore.HeaderValue{
+					Key:   "l5d-dst-override",
+					Value: fmt.Sprintf("%s.svc.cluster.local:%d", upstream.Host, upstream.Port),
+				},
+			},
+		},
+		RequestHeadersToRemove: []string{"l5d-remote-ip", "l5d-server-id"},
 	}
 }
 

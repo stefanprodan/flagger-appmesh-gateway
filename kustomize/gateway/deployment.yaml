@@ -71,10 +71,10 @@ spec:
               cpu: 10m
               memory: 32Mi
           volumeMounts:
-            - name: config
+            - name: xds-config
               mountPath: /config
         - name: kxds
-          image: stefanprodan/kxds:0.0.3-beta.1
+          image: stefanprodan/kxds:0.0.3
           imagePullPolicy: IfNotPresent
           securityContext:
             capabilities:
@@ -87,6 +87,7 @@ spec:
           args:
             - serve
             - --port=18000
+            - --ads=true
           ports:
             - name: grpc
               containerPort: 18000
@@ -100,6 +101,6 @@ spec:
             tcpSocket:
               port: grpc
       volumes:
-        - name: config
+        - name: xds-config
           configMap:
             name: envoy

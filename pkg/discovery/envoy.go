@@ -25,6 +25,7 @@ type EnvoyConfig struct {
 	version   int32
 	cache     cache.SnapshotCache
 	upstreams *sync.Map
+	portName  string
 }
 
 type Upstream struct {
@@ -44,11 +45,12 @@ type Canary struct {
 	CanaryWeight   int
 }
 
-func NewEnvoyConfig(cache cache.SnapshotCache) *EnvoyConfig {
+func NewEnvoyConfig(cache cache.SnapshotCache, portName string) *EnvoyConfig {
 	return &EnvoyConfig{
 		version:   0,
 		cache:     cache,
 		upstreams: new(sync.Map),
+		portName:  portName,
 	}
 }
 
@@ -57,7 +59,9 @@ func (e *EnvoyConfig) Delete(upstream string) {
 }
 
 func (e *EnvoyConfig) Upsert(upstream string, service corev1.Service) {
-	e.upstreams.Store(upstream, service)
+	if e.shouldSync(service) {
+		e.upstreams.Store(upstream, service)
+	}
 }
 
 func (e *EnvoyConfig) Sync() {
@@ -70,21 +74,20 @@ func (e *EnvoyConfig) Sync() {
 	e.upstreams.Range(func(key interface{}, value interface{}) bool {
 		item := key.(string)
 		service := value.(corev1.Service)
-		portName := "http"
 		ok, upstream := serviceToUpstream(service)
 		if !ok {
 			klog.Infof("service %s excluded, due to annotation", item)
 			return true
 		}
 
-		cluster, port := serviceToCluster(service, portName, 5000)
+		cluster, port := serviceToCluster(service, e.portName, 5000)
 		if cluster != nil {
 			upstream.Name = cluster.Name
 			upstream.Port = port
 			clusters = append(clusters, cluster)
 			domains[cluster.Name] = upstream
 		} else {
-			klog.Infof("service %s excluded, no port named '%s' found", item, portName)
+			klog.Infof("service %s excluded, no port named '%s' found", item, e.portName)
 		}
 		return true
 	})
@@ -103,6 +106,25 @@ func (e *EnvoyConfig) Sync() {
 	if err != nil {
 		klog.Errorf("error while setting snapshot %v", err)
 	}
+}
+
+func (e *EnvoyConfig) shouldSync(svc corev1.Service) bool {
+	var port int32
+	for _, p := range svc.Spec.Ports {
+		if p.Name == e.portName {
+			port = p.Port
+		}
+	}
+	if port == 0 {
+		return false
+	}
+	exposeAn := "envoy.gateway.kubernetes.io/expose"
+	for key, value := range svc.Annotations {
+		if key == exposeAn && value == "false" {
+			return false
+		}
+	}
+	return true
 }
 
 func serviceToCluster(svc corev1.Service, portName string, timeout int) (cluster *ev2.Cluster, port uint32) {

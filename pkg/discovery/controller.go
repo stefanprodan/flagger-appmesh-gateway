@@ -2,6 +2,8 @@ package discovery
 
 import (
 	"fmt"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -10,7 +12,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
-	"time"
 )
 
 type Controller struct {
@@ -67,12 +68,22 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) {
 		return
 	}
 
+	c.syncAll()
+
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
 
-	<-stopCh
-	klog.Info("stopping discovery workers")
+	tickChan := time.NewTicker(60 * time.Second).C
+	for {
+		select {
+		case <-tickChan:
+			c.syncAll()
+		case <-stopCh:
+			klog.Info("stopping discovery workers")
+			return
+		}
+	}
 }
 
 func (c *Controller) sync(key string) error {
@@ -92,6 +103,15 @@ func (c *Controller) sync(key string) error {
 	}
 	c.envoyConfig.Sync()
 	return nil
+}
+
+func (c *Controller) syncAll() {
+	for _, value := range c.indexer.List() {
+		svc := value.(*corev1.Service)
+		c.envoyConfig.Upsert(fmt.Sprintf("%s/%s", svc.Namespace, svc.Name), *svc)
+
+	}
+	c.envoyConfig.Sync()
 }
 
 func (c *Controller) handleErr(err error, key interface{}) {

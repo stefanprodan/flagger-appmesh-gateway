@@ -18,6 +18,7 @@ var kubeConfig string
 var port int
 var namespace string
 var ads bool
+var portName string
 
 func init() {
 	serveCmd.Flags().StringVarP(&masterURL, "master", "", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
@@ -25,6 +26,7 @@ func init() {
 	serveCmd.Flags().IntVarP(&port, "port", "p", 18000, "Port to listen on.")
 	serveCmd.Flags().StringVarP(&namespace, "namespace", "", "", "Namespace to watch for Kubernetes service.")
 	serveCmd.Flags().BoolVarP(&ads, "ads", "", false, "ADS flag forces a delay in responding to streaming requests until all resources are explicitly named in the request.")
+	serveCmd.Flags().StringVarP(&portName, "portName", "", "http", "Include Kubernetes service with this named port.")
 
 	rootCmd.AddCommand(serveCmd)
 }
@@ -55,7 +57,7 @@ func serve(cmd *cobra.Command, args []string) error {
 	go srv.Serve(ctx)
 	srv.Report()
 
-	envoyConfig := discovery.NewEnvoyConfig(cache)
+	envoyConfig := discovery.NewEnvoyConfig(cache, portName)
 	controller := discovery.NewController(clientset, namespace, envoyConfig)
 	go controller.Run(2, stopCh)
 

@@ -5,7 +5,7 @@ DOCKER_REPOSITORY:=stefanprodan
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
 
 run:
-	go run cmd/kxds/*.go serve --kubeconfig=$$HOME/.kube/config --ads=true
+	go run cmd/kxds/*.go kubernetes --kubeconfig=$$HOME/.kube/config --ads=true --port-name=http
 
 envoy:
 	envoy -c envoy.yaml -l info

@@ -56,7 +56,6 @@ func (srv *Server) Serve(ctx context.Context) {
 	v2.RegisterRouteDiscoveryServiceServer(grpcServer, srv.xdsServer)
 	v2.RegisterListenerDiscoveryServiceServer(grpcServer, srv.xdsServer)
 
-	klog.Infof("server started on port %d", srv.port)
 	go func() {
 		if err = grpcServer.Serve(listener); err != nil {
 			klog.Error(err)

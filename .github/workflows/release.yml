@@ -14,11 +14,8 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Push container
         run: |
-          DOCKER_TAG="latest"
           if [[ "${GITHUB_REF}" == "refs/tags"* ]]; then
             DOCKER_TAG=$(echo ${GITHUB_REF} | rev | cut -d/ -f1 | rev)
-          else
-            DOCKER_TAG=$(echo ${GITHUB_REF} | rev | cut -d/ -f1 | rev)-$(echo ${GITHUB_SHA} | head -c7)
+            docker build . -t ${{ secrets.DOCKER_USERNAME }}/kxds:${DOCKER_TAG}
+            docker push ${{ secrets.DOCKER_USERNAME }}/kxds:${DOCKER_TAG}
           fi
-          docker build . -t ${{ secrets.DOCKER_USERNAME }}/kxds:${DOCKER_TAG}
-          docker push ${{ secrets.DOCKER_USERNAME }}/kxds:${DOCKER_TAG}

@@ -13,19 +13,44 @@ KxDS runs as a sidecar next to Envoy and configures the proxy to expose Kubernet
 * **Envoy Weighted Clusters** are generated based on Kubernetes service annotations
 * **Envoy Listeners (LDS)** KxDS configures Envoy to listen on port `8080`
 
-### Install
+### Internal Kubernetes Gateway
 
-API Gateway for Kubernetes
-
-```sh
-kubectl apply -k github.com/stefanprodan/kxds//kustomize/gateway
-```
-
-API Gateway for App Mesh
+Install the API Gateway scoped to a namespace:
 
 ```sh
-kubectl apply -k github.com/stefanprodan/kxds//kustomize/appmesh-gateway
+kubectl create ns test
+kubectl -n test apply -k github.com/stefanprodan/kxds//kustomize/ns-gateway
 ```
+
+The above gateway will expose all Kubernetes services in the test namespace that have a `http` named port.
+
+Deploy podinfo in the `test` namespace:
+
+```sh
+kubectl -n test apply -k github.com/stefanprodan/kxds//kustomize/podinfo
+```
+
+Port forward to the gateway:
+
+```sh
+kubectl -n test port-forward svc/gateway 8080:80
+```
+
+Access the podinfo API by setting the host header to `podinfo.test`:
+
+```sh
+curl -vH 'Host: podinfo.test' localhost:8080
+```
+
+### External Kubernetes Gateway
+
+Install the API Gateway in `envoy-gateway` namespace:
+
+```sh
+kubectl apply -k github.com/stefanprodan/kxds//kustomize/envoy-gateway
+```
+
+The above gateway will expose all Kubernetes services in the cluster that have a `http` named port.
 
 ### Annotations
 
@@ -65,3 +90,13 @@ metadata:
 
 The primary and canary name format is `<service-name>-<namespace>-<port>`.
 Note that both Kubernetes services must exist or Envoy will reject the configuration.
+
+### App Mesh Gateway
+
+Install the API Gateway in `appmesh-gateway` namespace:
+
+```sh
+kubectl apply -k github.com/stefanprodan/kxds//kustomize/envoy-gateway
+```
+
+The above gateway will expose all App Mesh virtual services in the cluster.

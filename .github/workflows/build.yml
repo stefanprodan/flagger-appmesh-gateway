@@ -11,8 +11,10 @@ jobs:
         uses: stefanprodan/kube-tools@v1
         with:
           command: |
-            echo "build gateway"
-            kustomize build ./kustomize/gateway | kubeval --strict --ignore-missing-schemas
+            echo "build gateways"
+            kustomize build ./kustomize/ns-gateway | kubeval --strict --ignore-missing-schemas
+            kustomize build ./kustomize/envoy-gateway | kubeval --strict --ignore-missing-schemas
+            kustomize build ./kustomize/appmesh-gateway | kubeval --strict --ignore-missing-schemas
             echo "build podinfo"
             kustomize build ./kustomize/podinfo | kubeval --strict --ignore-missing-schemas
             echo "build tester"
@@ -25,3 +27,14 @@ jobs:
       - name: Build container
         run: |
           make build-container
+  push:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build container
+        run: |
+          if [[ -z "$CIRCLE_TAG" ]]; then
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u=${{ secrets.DOCKER_USERNAME }} --password-stdin
+            make push-container
+          fi

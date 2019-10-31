@@ -4,6 +4,8 @@ metadata:
   name: tester
   labels:
     app: tester
+  annotations:
+    envoy.gateway.kubernetes.io/expose: "false"
 spec:
   type: ClusterIP
   selector:

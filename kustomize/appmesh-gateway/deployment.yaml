@@ -1,117 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: appmesh-gateway
-  labels:
-    app: appmesh-gateway
+  name: gateway
 spec:
-  selector:
-    matchLabels:
-      app: appmesh-gateway
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
   template:
     metadata:
-      labels:
-        app: appmesh-gateway
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/path: "/stats/prometheus"
-        prometheus.io/port: "8081"
         # exclude inbound traffic on port 8080
         appmesh.k8s.aws/ports: "444"
         # exclude egress traffic to KxDS and Kubernetes API
         appmesh.k8s.aws/egressIgnoredPorts: "18000,22,443"
     spec:
-      serviceAccountName: appmesh-gateway
-      terminationGracePeriodSeconds: 10
       containers:
-        - name: gateway
-          image: "envoyproxy/envoy:v1.11.1"
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - NET_BIND_SERVICE
-          command:
-            - /bin/sh
-          args:
-            - -c
-            - /docker-entrypoint.sh envoy --service-node ${POD_NAME} --service-cluster envoy --base-id 1234 -l info -c /config/envoy.yaml
-          ports:
-            - name: admin
-              containerPort: 8081
-              protocol: TCP
-            - name: http
-              containerPort: 8080
-              protocol: TCP
-          livenessProbe:
-            initialDelaySeconds: 5
-            tcpSocket:
-              port: admin
-          readinessProbe:
-            initialDelaySeconds: 5
-            tcpSocket:
-              port: admin
-          env:
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-          resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
-          volumeMounts:
-            - name: xds-config
-              mountPath: /config
         - name: kxds
-          image: stefanprodan/kxds:0.1.0
-          imagePullPolicy: Always
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - NET_BIND_SERVICE
           command:
             - ./kxds
             - appmesh
             - --port=18000
-            - --ads=true
             - --gateway-mesh=appmesh
             - --gateway-name=$(POD_SERVICE_ACCOUNT)
             - --gateway-namespace=$(POD_NAMESPACE)
-          env:
-            - name: POD_SERVICE_ACCOUNT
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.serviceAccountName
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-          ports:
-            - name: grpc
-              containerPort: 18000
-              protocol: TCP
-          livenessProbe:
-            initialDelaySeconds: 5
-            tcpSocket:
-              port: grpc
-          readinessProbe:
-            initialDelaySeconds: 5
-            tcpSocket:
-              port: grpc
-      volumes:
-        - name: xds-config
-          configMap:
-            name: envoy

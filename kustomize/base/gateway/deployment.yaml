@@ -5,15 +5,14 @@ metadata:
   labels:
     app: gateway
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: gateway
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 2
-      maxUnavailable: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -22,11 +21,18 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/stats/prometheus"
         prometheus.io/port: "8081"
-        # exclude inbound traffic from App Mesh
-        appmesh.k8s.aws/ports: "444"
     spec:
       serviceAccountName: gateway
       terminationGracePeriodSeconds: 10
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: gateway
+                topologyKey: kubernetes.io/hostname
+              weight: 100
       containers:
         - name: gateway
           image: "envoyproxy/envoy:v1.11.1"
@@ -74,7 +80,7 @@ spec:
             - name: xds-config
               mountPath: /config
         - name: kxds
-          image: stefanprodan/kxds:0.0.4
+          image: stefanprodan/kxds:0.1.0
           imagePullPolicy: IfNotPresent
           securityContext:
             capabilities:
@@ -88,6 +94,15 @@ spec:
             - --port=18000
             - --ads=true
             - --port-name=http
+          env:
+            - name: POD_SERVICE_ACCOUNT
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.serviceAccountName
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           ports:
             - name: grpc
               containerPort: 18000
@@ -103,4 +118,4 @@ spec:
       volumes:
         - name: xds-config
           configMap:
-            name: envoy
+            name: gateway

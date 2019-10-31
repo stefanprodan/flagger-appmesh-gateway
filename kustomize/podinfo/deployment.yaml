@@ -20,12 +20,14 @@ spec:
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9797"
+        # Include only the http port in the mesh
+        appmesh.k8s.aws/ports: "9898"
       labels:
         app: podinfo
     spec:
       containers:
       - name: podinfod
-        image: stefanprodan/podinfo:3.1.3
+        image: stefanprodan/podinfo:3.1.0
         imagePullPolicy: IfNotPresent
         ports:
         - name: http

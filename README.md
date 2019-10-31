@@ -6,16 +6,25 @@ KxDS runs as a sidecar next to Envoy and configures the proxy to expose Kubernet
 
 ### Features
 
-* **Service Discovery** KxDS watches Kubernetes for ClusterIP services with a `http` named port
-* **Envoy Clusters (CDS)** are generated for each Kubernetes service in the form `<service-name>-<namespace>-<http-port>`
-* **Envoy Routes (RDS)** are generated for each cluster and mapped to the `<name>.<namespace>` domain
+* **Kubernetes Service Discovery** KxDS watches Kubernetes for services with a `http` named port
+* **App Mesh Service Discovery** KxDS watches Kubernetes for App Mesh virtual services
+* **Envoy Clusters (CDS)** are generated for each Kubernetes service or App Mesh virtual services
+* **Envoy Routes (RDS)** are generated for each cluster and configured with timeouts and retry policies
 * **Envoy Weighted Clusters** are generated based on Kubernetes service annotations
-* **Envoy Listeners (LDS)** KxDS configures Envoy to listen on port `8080` and sets up retry policies for each route
+* **Envoy Listeners (LDS)** KxDS configures Envoy to listen on port `8080`
 
 ### Install
 
+API Gateway for Kubernetes
+
 ```sh
 kubectl apply -k github.com/stefanprodan/kxds//kustomize/gateway
+```
+
+API Gateway for App Mesh
+
+```sh
+kubectl apply -k github.com/stefanprodan/kxds//kustomize/appmesh-gateway
 ```
 
 ### Annotations

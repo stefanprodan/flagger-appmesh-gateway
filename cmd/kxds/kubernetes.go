@@ -53,7 +53,7 @@ func kubeRun(cmd *cobra.Command, args []string) error {
 	srv.Report()
 
 	klog.Info("starting Kubernetes discovery workers")
-	kd := discovery.NewKubernetesDiscovery(clientset, namespace, snapshot, portName)
+	kd := discovery.NewKubernetesDiscovery(clientset, namespace, snapshot, optIn, portName)
 	kd.Run(2, stopCh)
 
 	return nil

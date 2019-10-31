@@ -61,7 +61,7 @@ func appmeshRun(cmd *cobra.Command, args []string) error {
 	srv.Report()
 
 	klog.Info("starting App Mesh discovery workers")
-	kd := discovery.NewAppmeshDiscovery(client, namespace, snapshot, gatewayMesh, gatewayName, gatewayNamespace)
+	kd := discovery.NewAppmeshDiscovery(client, namespace, snapshot, optIn, gatewayMesh, gatewayName, gatewayNamespace)
 	kd.Run(2, stopCh)
 
 	return nil

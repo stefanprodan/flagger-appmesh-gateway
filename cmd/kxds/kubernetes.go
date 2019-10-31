@@ -15,19 +15,9 @@ import (
 	"github.com/stefanprodan/kxds/pkg/signals"
 )
 
-var masterURL string
-var kubeConfig string
-var port int
-var namespace string
-var ads bool
 var portName string
 
 func init() {
-	kubeCmd.Flags().StringVarP(&masterURL, "master", "", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-	kubeCmd.Flags().StringVarP(&kubeConfig, "kubeconfig", "", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-	kubeCmd.Flags().IntVarP(&port, "port", "p", 18000, "Port to listen on.")
-	kubeCmd.Flags().StringVarP(&namespace, "namespace", "", "", "Namespace to watch for Kubernetes service.")
-	kubeCmd.Flags().BoolVarP(&ads, "ads", "", false, "ADS flag forces a delay in responding to streaming requests until all resources are explicitly named in the request.")
 	kubeCmd.Flags().StringVarP(&portName, "port-name", "", "http", "Include Kubernetes services with this named port.")
 
 	rootCmd.AddCommand(kubeCmd)

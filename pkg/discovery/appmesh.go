@@ -3,7 +3,6 @@ package discovery
 import (
 	"encoding/json"
 	"fmt"
-	"k8s.io/client-go/util/retry"
 	"strconv"
 	"time"
 
@@ -16,29 +15,31 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
 	"github.com/stefanprodan/kxds/pkg/envoy"
 )
 
-// AppmeshDiscovery watches Kubernetes for App Mesh virtual services events and
-// pushes them to Envoy over xDS
+// AppmeshDiscovery watches Kubernetes for App Mesh virtual services and
+// creates or deletes Envoy clusters and virtual hosts
 type AppmeshDiscovery struct {
-	clientset        dynamic.Interface
+	client           dynamic.Interface
 	indexer          cache.Indexer
 	queue            workqueue.RateLimitingInterface
 	informer         cache.Controller
 	snapshot         *envoy.Snapshot
+	optIn            bool
 	gatewayMesh      string
 	gatewayName      string
 	gatewayNamespace string
 }
 
 // NewAppmeshDiscovery starts watching for App Mesh virtual services
-func NewAppmeshDiscovery(clientset dynamic.Interface, namespace string, snapshot *envoy.Snapshot, gatewayMesh string, gatewayName string, gatewayNamespace string) *AppmeshDiscovery {
+func NewAppmeshDiscovery(client dynamic.Interface, namespace string, snapshot *envoy.Snapshot, optIn bool, gatewayMesh string, gatewayName string, gatewayNamespace string) *AppmeshDiscovery {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(clientset, 0, namespace, nil)
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(client, 0, namespace, nil)
 	gvr, _ := schema.ParseResourceArg("virtualservices.v1beta1.appmesh.k8s.aws")
 	vsFactory := factory.ForResource(*gvr)
 	informer := vsFactory.Informer()
@@ -66,11 +67,12 @@ func NewAppmeshDiscovery(clientset dynamic.Interface, namespace string, snapshot
 	informer.AddEventHandler(handlers)
 
 	return &AppmeshDiscovery{
-		clientset:        clientset,
+		client:           client,
 		informer:         informer,
 		indexer:          indexer,
 		queue:            queue,
 		snapshot:         snapshot,
+		optIn:            optIn,
 		gatewayMesh:      gatewayMesh,
 		gatewayName:      gatewayName,
 		gatewayNamespace: gatewayNamespace,
@@ -78,28 +80,28 @@ func NewAppmeshDiscovery(clientset dynamic.Interface, namespace string, snapshot
 }
 
 // Run starts the App Mesh discovery controller
-func (kd *AppmeshDiscovery) Run(threadiness int, stopCh <-chan struct{}) {
+func (ad *AppmeshDiscovery) Run(threadiness int, stopCh <-chan struct{}) {
 	defer runtime.HandleCrash()
-	defer kd.queue.ShutDown()
+	defer ad.queue.ShutDown()
 
-	go kd.informer.Run(stopCh)
+	go ad.informer.Run(stopCh)
 
-	if !cache.WaitForCacheSync(stopCh, kd.informer.HasSynced) {
+	if !cache.WaitForCacheSync(stopCh, ad.informer.HasSynced) {
 		runtime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
 		return
 	}
 
-	kd.syncAll()
+	ad.syncAll()
 
 	for i := 0; i < threadiness; i++ {
-		go wait.Until(kd.runWorker, time.Second, stopCh)
+		go wait.Until(ad.runWorker, time.Second, stopCh)
 	}
 
 	tickChan := time.NewTicker(5 * time.Minute).C
 	for {
 		select {
 		case <-tickChan:
-			kd.syncAll()
+			ad.syncAll()
 		case <-stopCh:
 			klog.Info("stopping Kubernetes discovery workers")
 			return
@@ -107,95 +109,95 @@ func (kd *AppmeshDiscovery) Run(threadiness int, stopCh <-chan struct{}) {
 	}
 }
 
-func (kd *AppmeshDiscovery) sync(key string) error {
-	_, _, err := kd.indexer.GetByKey(key)
+func (ad *AppmeshDiscovery) sync(key string) error {
+	_, _, err := ad.indexer.GetByKey(key)
 	if err != nil {
 		klog.Errorf("fetching object with key %s from store failed %v", key, err)
 		return err
 	}
-	kd.syncAll()
+	ad.syncAll()
 	return nil
 }
 
-func (kd *AppmeshDiscovery) syncAll() {
+func (ad *AppmeshDiscovery) syncAll() {
 	var backends []string
-	for _, value := range kd.indexer.List() {
+	for _, value := range ad.indexer.List() {
 		un := value.(*unstructured.Unstructured)
-		vs, err := kd.toVirtualService(un)
+		vs, err := ad.toVirtualService(un)
 		if err != nil {
 			klog.Errorf("unmarshal object %s from store failed %v", un.GetName(), err)
 			return
 		}
-		if kd.svcIsValid(*vs) {
+		if ad.vsIsValid(*vs) {
 			backends = append(backends, vs.Name)
-			kd.snapshot.Store(fmt.Sprintf("%s/%s", vs.Namespace, vs.Name), kd.svcToUpstream(*vs))
+			ad.snapshot.Store(fmt.Sprintf("%s/%s", vs.Namespace, vs.Name), ad.vsToUpstream(*vs))
 		}
 	}
 
 	klog.Infof("updating gateway virtual node with %d backends", len(backends))
-	err := kd.updateVirtualNode(backends)
+	err := ad.updateVirtualNode(backends)
 	if err != nil {
 		klog.Error(err)
 		return
 	}
 
-	klog.Infof("refreshing cache for %d services", kd.snapshot.Len())
-	kd.snapshot.Sync()
+	klog.Infof("refreshing cache for %d services", ad.snapshot.Len())
+	ad.snapshot.Sync()
 
 }
 
-func (kd *AppmeshDiscovery) handleErr(err error, key interface{}) {
+func (ad *AppmeshDiscovery) handleErr(err error, key interface{}) {
 	if err == nil {
-		kd.queue.Forget(key)
+		ad.queue.Forget(key)
 		return
 	}
 
-	if kd.queue.NumRequeues(key) < 5 {
+	if ad.queue.NumRequeues(key) < 5 {
 		klog.Infof("error syncing %v: %v", key, err)
-		kd.queue.AddRateLimited(key)
+		ad.queue.AddRateLimited(key)
 		return
 	}
 
-	kd.queue.Forget(key)
+	ad.queue.Forget(key)
 	runtime.HandleError(err)
 	klog.Infof("dropping %q out of the queue: %v", key, err)
 }
 
-func (kd *AppmeshDiscovery) processNextItem() bool {
-	key, quit := kd.queue.Get()
+func (ad *AppmeshDiscovery) processNextItem() bool {
+	key, quit := ad.queue.Get()
 	if quit {
 		return false
 	}
-	defer kd.queue.Done(key)
+	defer ad.queue.Done(key)
 
-	err := kd.sync(key.(string))
-	kd.handleErr(err, key)
+	err := ad.sync(key.(string))
+	ad.handleErr(err, key)
 	return true
 }
 
-func (kd *AppmeshDiscovery) runWorker() {
-	for kd.processNextItem() {
+func (ad *AppmeshDiscovery) runWorker() {
+	for ad.processNextItem() {
 	}
 }
 
-// svcToUpstream converts the App Mesh virtual service to an Upstream
-func (kd *AppmeshDiscovery) svcToUpstream(svc VirtualService) envoy.Upstream {
+// vsToUpstream converts the App Mesh virtual service to an Upstream
+func (ad *AppmeshDiscovery) vsToUpstream(vs VirtualService) envoy.Upstream {
 	port := uint32(80)
-	for _, value := range svc.Spec.VirtualRouter.Listeners {
+	for _, value := range vs.Spec.VirtualRouter.Listeners {
 		port = uint32(value.PortMapping.Port)
 	}
 
 	up := envoy.Upstream{
-		Name: fmt.Sprintf("%s-%d", svc.Name, port),
+		Name: fmt.Sprintf("%s-%d", vs.Name, port),
 		Domains: []string{
-			svc.Name,
-			fmt.Sprintf("%s:%d", svc.Name, port),
+			vs.Name,
+			fmt.Sprintf("%s:%d", vs.Name, port),
 		},
 		Port:    port,
-		Host:    svc.Name,
+		Host:    vs.Name,
 		Prefix:  "/",
 		Retries: 2,
-		Timeout: 15 * time.Second,
+		Timeout: 45 * time.Second,
 	}
 
 	appendDomain := func(slice []string, i string) []string {
@@ -207,7 +209,7 @@ func (kd *AppmeshDiscovery) svcToUpstream(svc VirtualService) envoy.Upstream {
 		return append(slice, i)
 	}
 
-	for key, value := range svc.Annotations {
+	for key, value := range vs.Annotations {
 		if key == envoy.AnDomain {
 			up.Domains = appendDomain(up.Domains, value)
 		}
@@ -227,9 +229,18 @@ func (kd *AppmeshDiscovery) svcToUpstream(svc VirtualService) envoy.Upstream {
 	return up
 }
 
-// svcIsValid checks if a virtual service service is eligible
-func (kd *AppmeshDiscovery) svcIsValid(svc VirtualService) bool {
-	for key, value := range svc.Annotations {
+// vsIsValid checks if a virtual service service is eligible
+func (ad *AppmeshDiscovery) vsIsValid(vs VirtualService) bool {
+	if vs.Spec.VirtualRouter == nil ||
+		len(vs.Spec.VirtualRouter.Listeners) < 1 ||
+		vs.Spec.VirtualRouter.Listeners[0].PortMapping.Port < 1 {
+		return false
+	}
+
+	for key, value := range vs.Annotations {
+		if ad.optIn && key == envoy.AnExpose && value != "true" {
+			return false
+		}
 		if key == envoy.AnExpose && value == "false" {
 			return false
 		}
@@ -237,7 +248,7 @@ func (kd *AppmeshDiscovery) svcIsValid(svc VirtualService) bool {
 	return true
 }
 
-func (kd *AppmeshDiscovery) toVirtualService(obj *unstructured.Unstructured) (*VirtualService, error) {
+func (ad *AppmeshDiscovery) toVirtualService(obj *unstructured.Unstructured) (*VirtualService, error) {
 	b, _ := json.Marshal(&obj)
 	var svc VirtualService
 	err := json.Unmarshal(b, &svc)
@@ -248,8 +259,8 @@ func (kd *AppmeshDiscovery) toVirtualService(obj *unstructured.Unstructured) (*V
 	return &svc, nil
 }
 
-func (kd *AppmeshDiscovery) updateVirtualNode(backends []string) error {
-	vnName := fmt.Sprintf("%s.%s", kd.gatewayName, kd.gatewayNamespace)
+func (ad *AppmeshDiscovery) updateVirtualNode(backends []string) error {
+	vnName := fmt.Sprintf("%s.%s", ad.gatewayName, ad.gatewayNamespace)
 	var vnBackends []Backend
 	for _, value := range backends {
 		vnBackends = append(vnBackends, Backend{
@@ -257,7 +268,7 @@ func (kd *AppmeshDiscovery) updateVirtualNode(backends []string) error {
 		})
 	}
 	spec := VirtualNodeSpec{
-		MeshName: kd.gatewayMesh,
+		MeshName: ad.gatewayMesh,
 		Listeners: []Listener{
 			{PortMapping: PortMapping{
 				Port:     444,
@@ -265,7 +276,7 @@ func (kd *AppmeshDiscovery) updateVirtualNode(backends []string) error {
 			}},
 		},
 		ServiceDiscovery: &ServiceDiscovery{Dns: &DnsServiceDiscovery{
-			HostName: fmt.Sprintf("%s.%s", kd.gatewayName, kd.gatewayNamespace),
+			HostName: fmt.Sprintf("%s.%s", ad.gatewayName, ad.gatewayNamespace),
 		}},
 		Backends: vnBackends,
 	}
@@ -281,15 +292,15 @@ func (kd *AppmeshDiscovery) updateVirtualNode(backends []string) error {
 		},
 	}
 
-	client := kd.clientset.Resource(schema.GroupVersionResource{
+	client := ad.client.Resource(schema.GroupVersionResource{
 		Group:    "appmesh.k8s.aws",
 		Version:  "v1beta1",
 		Resource: "virtualnodes",
 	})
 
-	_, err := client.Namespace(kd.gatewayNamespace).Get(vnName, metav1.GetOptions{})
+	_, err := client.Namespace(ad.gatewayNamespace).Get(vnName, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		_, createErr := client.Namespace(kd.gatewayNamespace).Create(vn, metav1.CreateOptions{})
+		_, createErr := client.Namespace(ad.gatewayNamespace).Create(vn, metav1.CreateOptions{})
 		if createErr != nil && !errors.IsNotFound(createErr) {
 			return fmt.Errorf("failed to create gateway virtual node: %v", err)
 		}
@@ -301,7 +312,7 @@ func (kd *AppmeshDiscovery) updateVirtualNode(backends []string) error {
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		gw, err := client.Namespace(kd.gatewayNamespace).Get(vnName, metav1.GetOptions{})
+		gw, err := client.Namespace(ad.gatewayNamespace).Get(vnName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -316,7 +327,7 @@ func (kd *AppmeshDiscovery) updateVirtualNode(backends []string) error {
 				"spec": spec,
 			},
 		}
-		_, err = client.Namespace(kd.gatewayNamespace).Update(vn, metav1.UpdateOptions{})
+		_, err = client.Namespace(ad.gatewayNamespace).Update(vn, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}

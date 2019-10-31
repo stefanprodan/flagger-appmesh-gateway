@@ -1,0 +1,27 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  kustomize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Validate manifests
+        uses: stefanprodan/kube-tools@v1
+        with:
+          command: |
+            echo "build gateway"
+            kustomize build ./kustomize/gateway | kubeval --strict --ignore-missing-schemas
+            echo "build podinfo"
+            kustomize build ./kustomize/podinfo | kubeval --strict --ignore-missing-schemas
+            echo "build tester"
+            kustomize build ./kustomize/tester | kubeval --strict --ignore-missing-schemas
+  build:
+    runs-on: ubuntu-latest
+    needs: [kustomize]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build container
+        run: |
+          make build-container

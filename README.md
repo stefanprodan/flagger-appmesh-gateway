@@ -1,4 +1,5 @@
 # KxDS
+[![CI](https://github.com/stefanprodan/kxds/workflows/CI/badge.svg)](https://github.com/stefanprodan/kxds/actions)
 
 KxDS is an Envoy discovery service implementation for Kubernetes.
 KxDS runs as a sidecar next to Envoy and configures the proxy to expose Kubernetes services.

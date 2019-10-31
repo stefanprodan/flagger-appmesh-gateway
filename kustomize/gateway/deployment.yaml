@@ -74,7 +74,7 @@ spec:
             - name: xds-config
               mountPath: /config
         - name: kxds
-          image: stefanprodan/kxds:0.0.4-beta.2
+          image: stefanprodan/kxds:0.0.4
           imagePullPolicy: IfNotPresent
           securityContext:
             capabilities:

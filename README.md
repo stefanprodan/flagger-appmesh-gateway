@@ -1,8 +1,9 @@
 # KxDS
 [![CI](https://github.com/stefanprodan/kxds/workflows/CI/badge.svg)](https://github.com/stefanprodan/kxds/actions)
+[![report](https://goreportcard.com/badge/github.com/stefanprodan/kxds)](https://goreportcard.com/report/github.com/stefanprodan/kxds)
 
-KxDS is an Envoy discovery service implementation for Kubernetes.
-KxDS runs as a sidecar next to Envoy and configures the proxy to expose Kubernetes services.
+KxDS is an [Envoy](https://www.envoyproxy.io/) discovery service implementation for Kubernetes.
+It runs as a sidecar next to Envoy and configures the proxy to expose Kubernetes services.
 
 ### Features
 
@@ -15,7 +16,7 @@ KxDS runs as a sidecar next to Envoy and configures the proxy to expose Kubernet
 
 ### Internal Kubernetes Gateway
 
-Install the API Gateway scoped to a namespace:
+Install the API Gateway as NodePort scoped to a namespace:
 
 ```sh
 kubectl create ns test
@@ -44,7 +45,7 @@ curl -vH 'Host: podinfo.test' localhost:8080
 
 ### External Kubernetes Gateway
 
-Install the API Gateway in `envoy-gateway` namespace:
+Install the API Gateway as LoadBalancer in `envoy-gateway` namespace:
 
 ```sh
 kubectl apply -k github.com/stefanprodan/kxds//kustomize/envoy-gateway
@@ -93,7 +94,7 @@ Note that both Kubernetes services must exist or Envoy will reject the configura
 
 ### App Mesh Gateway
 
-Install the API Gateway in `appmesh-gateway` namespace:
+Install the API Gateway as NLB in `appmesh-gateway` namespace:
 
 ```sh
 kubectl apply -k github.com/stefanprodan/kxds//kustomize/envoy-gateway

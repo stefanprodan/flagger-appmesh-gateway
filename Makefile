@@ -4,6 +4,12 @@ NAME:=kxds
 DOCKER_REPOSITORY:=stefanprodan
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
 
+build:
+	go build -o bin/kxds cmd/kxds/*.go
+
+test:
+	go test -v -race ./...
+
 run:
 	go run cmd/kxds/*.go kubernetes --kubeconfig=$$HOME/.kube/config \
 		--port-name=http

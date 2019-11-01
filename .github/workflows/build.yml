@@ -10,13 +10,11 @@ jobs:
       - name: Go fmt
         uses: stefanprodan/kube-tools@v1
         with:
-          command: |
-            make go-fmt
+          command: make go-fmt
       - name: Go test
         uses: stefanprodan/kube-tools@v1
         with:
-          command: |
-            make test
+          command: make test
       - name: Validate kustomization
         uses: stefanprodan/kube-tools@v1
         with:

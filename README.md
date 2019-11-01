@@ -1,13 +1,14 @@
 # appmesh-gateway
 [![CI](https://github.com/stefanprodan/appmesh-gateway/workflows/build/badge.svg)](https://github.com/stefanprodan/appmesh-gateway/actions)
 [![report](https://goreportcard.com/badge/github.com/stefanprodan/appmesh-gateway)](https://goreportcard.com/report/github.com/stefanprodan/appmesh-gateway)
+[![release](https://img.shields.io/github/release/stefanprodan/appmesh-gateway/all.svg)](https://github.com/stefanprodan/appmesh-gateway/releases)
 
 App Mesh Gateway is an edge load balancer that exposes applications outside the mesh.
 
 The gateway is composed of:
 * [Envoy](https://www.envoyproxy.io/) proxy
-* Envoy data plane API (CDS/RDS/LDS)
-* Kubernetes controller 
+* Envoy control plane xDS server (CDS/RDS/LDS)
+* Kubernetes controller (service discovery)
 
 An App Mesh virtual service can be exposed outside the mesh by annotating the object with:
 
@@ -30,7 +31,7 @@ curl -H 'Host: frontend.test' http://<gateway-host>/
 
 The gateway registers/de-registers virtual services automatically as they come and go in the cluster.
 
-### Install
+## Install
 
 Requirements:
 * App Mesh CRDs, controller and inject [installed](https://github.com/aws/eks-charts#app-mesh)
@@ -59,7 +60,7 @@ Status:
     Type:                  VirtualNodeActive
 ```
 
-### Example
+## Example
 
 Deploy podinfo in the `test` namespace:
 
@@ -93,3 +94,7 @@ jq -r ".status.loadBalancer.ingress[].hostname")"
 
 curl -vH 'Host: podinfo.internal' $URL
 ```
+
+## Contributing
+
+App Mesh Gateway is Apache 2.0 licensed and accepts contributions via GitHub pull requests.

@@ -11,8 +11,10 @@ jobs:
         uses: stefanprodan/kube-tools@v1
         with:
           command: |
-            echo "build gateway"
-            kustomize build ./kustomize/gateway | kubeval --strict --ignore-missing-schemas
+            echo "build gateways"
+            kustomize build ./kustomize/ns-gateway | kubeval --strict --ignore-missing-schemas
+            kustomize build ./kustomize/envoy-gateway | kubeval --strict --ignore-missing-schemas
+            kustomize build ./kustomize/appmesh-gateway | kubeval --strict --ignore-missing-schemas
             echo "build podinfo"
             kustomize build ./kustomize/podinfo | kubeval --strict --ignore-missing-schemas
             echo "build tester"

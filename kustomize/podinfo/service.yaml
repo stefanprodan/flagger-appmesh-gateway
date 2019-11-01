@@ -8,16 +8,13 @@ metadata:
     envoy.gateway.kubernetes.io/expose: "true"
     envoy.gateway.kubernetes.io/timeout: "25s"
     envoy.gateway.kubernetes.io/retries: "5"
-    envoy.gateway.kubernetes.io/domain: "podinfo.default"
-    envoy.gateway.kubernetes.io/primary: "podinfo-primary-default-9898"
-    envoy.gateway.kubernetes.io/canary: "podinfo-canary-default-9898"
-    envoy.gateway.kubernetes.io/canary-weight: "50"
+    envoy.gateway.kubernetes.io/domain: "podinfo.internal"
 spec:
   type: ClusterIP
+  selector:
+    app: podinfo
   ports:
     - name: http
       port: 9898
       protocol: TCP
       targetPort: http
-  selector:
-    app: gateway

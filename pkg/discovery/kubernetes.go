@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/stefanprodan/kxds/pkg/envoy"
 	"strconv"
 	"time"
 
@@ -16,21 +15,24 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
+
+	"github.com/stefanprodan/kxds/pkg/envoy"
 )
 
-// KubernetesDiscovery watches Kubernetes for services events and
-// pushes them to Envoy over xDS
+// KubernetesDiscovery watches Kubernetes for services and
+// creates or deletes Envoy clusters and virtual hosts
 type KubernetesDiscovery struct {
 	clientset *kubernetes.Clientset
 	indexer   cache.Indexer
 	queue     workqueue.RateLimitingInterface
 	informer  cache.Controller
 	snapshot  *envoy.Snapshot
+	optIn     bool
 	portName  string
 }
 
-// NewKubernetesDiscovery starts watching for Kubernetes services events
-func NewKubernetesDiscovery(clientset *kubernetes.Clientset, namespace string, snapshot *envoy.Snapshot, portName string) *KubernetesDiscovery {
+// NewKubernetesDiscovery starts watching for Kubernetes services
+func NewKubernetesDiscovery(clientset *kubernetes.Clientset, namespace string, snapshot *envoy.Snapshot, optIn bool, portName string) *KubernetesDiscovery {
 	watch := cache.NewListWatchFromClient(clientset.CoreV1().RESTClient(), "services", namespace, fields.Everything())
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	indexer, informer := cache.NewIndexerInformer(watch, &corev1.Service{}, 0, cache.ResourceEventHandlerFuncs{
@@ -65,6 +67,7 @@ func NewKubernetesDiscovery(clientset *kubernetes.Clientset, namespace string, s
 		indexer:   indexer,
 		queue:     queue,
 		snapshot:  snapshot,
+		optIn:     optIn,
 		portName:  portName,
 	}
 }
@@ -124,7 +127,7 @@ func (kd *KubernetesDiscovery) syncAll() {
 	for _, value := range kd.indexer.List() {
 		svc := value.(*corev1.Service)
 		if kd.svcIsValid(*svc) {
-			//dumpUpstream(kd.svcToUpstream(*svc))
+			//dumpUpstream(kd.vsToUpstream(*svc))
 			kd.snapshot.Store(fmt.Sprintf("%s/%s", svc.Namespace, svc.Name), kd.svcToUpstream(*svc))
 		}
 	}
@@ -191,8 +194,8 @@ func (kd *KubernetesDiscovery) svcToUpstream(svc corev1.Service) envoy.Upstream 
 		Host:    fmt.Sprintf("%s.%s", svc.Name, svc.Namespace),
 		Prefix:  "/",
 		Retries: 2,
-		Timeout: 15 * time.Second,
-		Canary:  &envoy.Canary{},
+		Timeout: 45 * time.Second,
+		Canary:  envoy.CanaryFromAnnotations(svc.Annotations),
 	}
 
 	appendDomain := func(slice []string, i string) []string {
@@ -220,18 +223,6 @@ func (kd *KubernetesDiscovery) svcToUpstream(svc corev1.Service) envoy.Upstream 
 				up.Retries = uint32(r)
 			}
 		}
-		if key == envoy.AnPrimary {
-			up.Canary.PrimaryCluster = value
-		}
-		if key == envoy.AnCanary {
-			up.Canary.CanaryCluster = value
-		}
-		if key == envoy.AnCanaryWeight {
-			r, err := strconv.Atoi(value)
-			if err == nil {
-				up.Canary.CanaryWeight = r
-			}
-		}
 	}
 	return up
 }
@@ -249,6 +240,9 @@ func (kd *KubernetesDiscovery) svcIsValid(svc corev1.Service) bool {
 	}
 
 	for key, value := range svc.Annotations {
+		if kd.optIn && key == envoy.AnExpose && value != "true" {
+			return false
+		}
 		if key == envoy.AnExpose && value == "false" {
 			return false
 		}

@@ -11,14 +11,10 @@ jobs:
         uses: stefanprodan/kube-tools@v1
         with:
           command: |
-            echo "build gateways"
-            kustomize build ./kustomize/ns-gateway | kubeval --strict --ignore-missing-schemas
-            kustomize build ./kustomize/envoy-gateway | kubeval --strict --ignore-missing-schemas
+            echo "build gateway"
             kustomize build ./kustomize/appmesh-gateway | kubeval --strict --ignore-missing-schemas
-            echo "build podinfo"
-            kustomize build ./kustomize/podinfo | kubeval --strict --ignore-missing-schemas
-            echo "build tester"
-            kustomize build ./kustomize/tester | kubeval --strict --ignore-missing-schemas
+            echo "build test"
+            kustomize build ./kustomize/test | kubeval --strict --ignore-missing-schemas
   build:
     runs-on: ubuntu-latest
     needs: [kustomize]

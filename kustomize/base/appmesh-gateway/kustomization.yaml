@@ -5,6 +5,6 @@ resources:
 - deployment.yaml
 - service.yaml
 configMapGenerator:
-  - name: gateway
+  - name: appmesh-gateway
     files:
       - envoy.yaml

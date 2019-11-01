@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	"github.com/stefanprodan/kxds/pkg/envoy"
+	"github.com/stefanprodan/appmesh-gateway/pkg/envoy"
 )
 
 // AppmeshDiscovery watches Kubernetes for App Mesh virtual services and
@@ -220,16 +220,16 @@ func (ad *AppmeshDiscovery) vsToUpstream(vs VirtualService) envoy.Upstream {
 	}
 
 	for key, value := range vs.Annotations {
-		if key == envoy.AnDomain {
+		if key == envoy.GatewayDomain {
 			up.Domains = appendDomain(up.Domains, value)
 		}
-		if key == envoy.AnTimeout {
+		if key == envoy.GatewayTimeout {
 			d, err := time.ParseDuration(value)
 			if err == nil {
 				up.Timeout = d
 			}
 		}
-		if key == envoy.AnRetries {
+		if key == envoy.GatewayRetries {
 			r, err := strconv.Atoi(value)
 			if err == nil {
 				up.Retries = uint32(r)
@@ -248,10 +248,10 @@ func (ad *AppmeshDiscovery) vsIsValid(vs VirtualService) bool {
 	}
 
 	for key, value := range vs.Annotations {
-		if ad.optIn && key == envoy.AnExpose && value != "true" {
+		if ad.optIn && key == envoy.GatewayExpose && value != "true" {
 			return false
 		}
-		if key == envoy.AnExpose && value == "false" {
+		if key == envoy.GatewayExpose && value == "false" {
 			return false
 		}
 	}
@@ -270,7 +270,7 @@ func (ad *AppmeshDiscovery) toVirtualService(obj *unstructured.Unstructured) (*V
 }
 
 func (ad *AppmeshDiscovery) updateVirtualNode(backends []string) error {
-	vnName := fmt.Sprintf("%s.%s", ad.gatewayName, ad.gatewayNamespace)
+	vnName := ad.gatewayName
 	var vnBackends []Backend
 	for _, value := range backends {
 		vnBackends = append(vnBackends, Backend{

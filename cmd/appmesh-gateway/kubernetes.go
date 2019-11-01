@@ -9,10 +9,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 
-	"github.com/stefanprodan/kxds/pkg/discovery"
-	"github.com/stefanprodan/kxds/pkg/envoy"
-	"github.com/stefanprodan/kxds/pkg/server"
-	"github.com/stefanprodan/kxds/pkg/signals"
+	"github.com/stefanprodan/appmesh-gateway/pkg/discovery"
+	"github.com/stefanprodan/appmesh-gateway/pkg/envoy"
+	"github.com/stefanprodan/appmesh-gateway/pkg/server"
+	"github.com/stefanprodan/appmesh-gateway/pkg/signals"
 )
 
 var portName string

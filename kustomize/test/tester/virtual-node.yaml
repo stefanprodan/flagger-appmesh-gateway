@@ -1,0 +1,18 @@
+apiVersion: appmesh.k8s.aws/v1beta1
+kind: VirtualNode
+metadata:
+  name: tester
+spec:
+  meshName: appmesh
+  serviceDiscovery:
+    dns:
+      hostName: tester.test
+  listeners:
+    - portMapping:
+        port: 444
+        protocol: http
+  backends:
+    - virtualService:
+        virtualServiceName: podinfo
+    - virtualService:
+        virtualServiceName: appmesh-gateway

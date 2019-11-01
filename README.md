@@ -1,40 +1,53 @@
-# KxDS
-[![CI](https://github.com/stefanprodan/kxds/workflows/CI/badge.svg)](https://github.com/stefanprodan/kxds/actions)
-[![report](https://goreportcard.com/badge/github.com/stefanprodan/kxds)](https://goreportcard.com/report/github.com/stefanprodan/kxds)
+# appmesh-gateway
+[![CI](https://github.com/stefanprodan/appmesh-gateway/workflows/CI/badge.svg)](https://github.com/stefanprodan/appmesh-gateway/actions)
+[![report](https://goreportcard.com/badge/github.com/stefanprodan/appmesh-gateway)](https://goreportcard.com/report/github.com/stefanprodan/appmesh-gateway)
 
-KxDS is an [Envoy](https://www.envoyproxy.io/) discovery service implementation for Kubernetes.
-It runs as a sidecar next to Envoy and configures the proxy to expose Kubernetes services.
+App Mesh Gateway is an edge load balancer that exposes applications outside the mesh.
 
-### Features
+The gateway is composed of:
+* [Envoy](https://www.envoyproxy.io/) proxy
+* Envoy data plane API (CDS/RDS/LDS)
+* Kubernetes controller 
 
-* **Kubernetes Service Discovery** KxDS watches Kubernetes for services with a `http` named port
-* **App Mesh Service Discovery** KxDS watches Kubernetes for App Mesh virtual services
-* **Envoy Clusters (CDS)** are generated for each Kubernetes service or App Mesh virtual services
-* **Envoy Routes (RDS)** are generated for each cluster and configured with timeouts and retry policies
-* **Envoy Weighted Clusters** are generated based on Kubernetes service annotations
-* **Envoy Listeners (LDS)** KxDS configures Envoy to listen on port `8080`
+An App Mesh virtual service can be exposed outside the mesh by annotating the object with:
 
-### Internal Kubernetes Gateway
-
-Install the API Gateway as NodePort scoped to a namespace:
-
-```sh
-kubectl create ns test
-kubectl -n test apply -k github.com/stefanprodan/kxds//kustomize/ns-gateway
+```yaml
+apiVersion: appmesh.k8s.aws/v1beta1
+kind: VirtualService
+metadata:
+  name: frontend.test
+  annotations:
+    gateway.appmesh.k8s.aws/expose: "true"
+    gateway.appmesh.k8s.aws/domain: "frontend.example.com"
 ```
 
-The above gateway will expose all Kubernetes services in the test namespace that have a `http` named port.
+If you want to expose the service inside the Kubernetes cluster you can omit the domain annotation.
+By default the gateway exposes a virtual service by its name,
+a service can be accessed by setting the host HTTP header e.g.:
+```sh
+curl -H 'Host: frontend.test' http://<gateway-host>/
+```
+
+The gateway registers/de-registers virtual services automatically as they come and go in the cluster.
+
+### Install
+
+Install the API Gateway as NLB in `appmesh-gateway` namespace:
+
+```sh
+kubectl apply -k github.com/stefanprodan/appmesh-gateway//kustomize/appmesh-gateway
+```
 
 Deploy podinfo in the `test` namespace:
 
 ```sh
-kubectl -n test apply -k github.com/stefanprodan/kxds//kustomize/podinfo
+kubectl -n test apply -k github.com/stefanprodan/appmesh-gateway//kustomize/test
 ```
 
 Port forward to the gateway:
 
 ```sh
-kubectl -n test port-forward svc/gateway 8080:80
+kubectl -n appmesh-gateway port-forward svc/appmesh-gateway 8080:80
 ```
 
 Access the podinfo API by setting the host header to `podinfo.test`:
@@ -43,61 +56,8 @@ Access the podinfo API by setting the host header to `podinfo.test`:
 curl -vH 'Host: podinfo.test' localhost:8080
 ```
 
-### External Kubernetes Gateway
-
-Install the API Gateway as LoadBalancer in `envoy-gateway` namespace:
+Access podinfo on its custom domain:
 
 ```sh
-kubectl apply -k github.com/stefanprodan/kxds//kustomize/envoy-gateway
+curl -vH 'Host: podinfo.internal' localhost:8080
 ```
-
-The above gateway will expose all Kubernetes services in the cluster that have a `http` named port.
-
-### Annotations
-
-Kubernetes service exposed on an external domain:
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend
-  namespace: demo
-  annotations:
-    envoy.gateway.kubernetes.io/expose: "true"
-    envoy.gateway.kubernetes.io/timeout: "25s"
-    envoy.gateway.kubernetes.io/retries: "5"
-    envoy.gateway.kubernetes.io/domain: "frontend.example.com"
-spec:
-  ports:
-    - name: http
-      port: 9898
-      protocol: TCP
-```
-
-Traffic split with weighted destinations:
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend
-  namespace: demo
-  annotations:
-    envoy.gateway.kubernetes.io/domain: "backend.demo"
-    envoy.gateway.kubernetes.io/primary: "backend-primary-demo-9898"
-    envoy.gateway.kubernetes.io/canary: "backend-canary-demo-9898"
-    envoy.gateway.kubernetes.io/canary-weight: "50"
-```
-
-The primary and canary name format is `<service-name>-<namespace>-<port>`.
-Note that both Kubernetes services must exist or Envoy will reject the configuration.
-
-### App Mesh Gateway
-
-Install the API Gateway as NLB in `appmesh-gateway` namespace:
-
-```sh
-kubectl apply -k github.com/stefanprodan/kxds//kustomize/envoy-gateway
-```
-
-The above gateway will expose all App Mesh virtual services in the cluster.

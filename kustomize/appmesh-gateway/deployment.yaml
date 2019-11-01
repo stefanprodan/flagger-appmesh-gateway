@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gateway
+  name: appmesh-gateway
 spec:
   template:
     metadata:
@@ -12,9 +12,9 @@ spec:
         appmesh.k8s.aws/egressIgnoredPorts: "18000,22,443"
     spec:
       containers:
-        - name: kxds
+        - name: gateway
           command:
-            - ./kxds
+            - ./appmesh-gateway
             - appmesh
             - --port=18000
             - --gateway-mesh=appmesh

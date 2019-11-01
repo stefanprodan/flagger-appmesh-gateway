@@ -1,4 +1,4 @@
-module github.com/stefanprodan/kxds
+module github.com/stefanprodan/appmesh-gateway
 
 go 1.13
 

@@ -103,7 +103,7 @@ func (kd *KubernetesDiscovery) Run(threadiness int, stopCh <-chan struct{}) {
 }
 
 func (kd *KubernetesDiscovery) sync(key string) error {
-	obj, exists, err := kd.indexer.GetByKey(key)
+	_, exists, err := kd.indexer.GetByKey(key)
 	if err != nil {
 		klog.Errorf("fetching object with key %s from store failed %v", key, err)
 		return err
@@ -112,14 +112,9 @@ func (kd *KubernetesDiscovery) sync(key string) error {
 	if !exists {
 		klog.Infof("deleting %s from cache", key)
 		kd.snapshot.Delete(key)
-	} else {
-		svc := obj.(*corev1.Service)
-		if kd.svcIsValid(*svc) {
-			klog.Infof("storing %s in cache", key)
-			kd.snapshot.Store(key, kd.svcToUpstream(*svc))
-		}
 	}
-	kd.snapshot.Sync()
+
+	kd.syncAll()
 	return nil
 }
 
@@ -131,8 +126,11 @@ func (kd *KubernetesDiscovery) syncAll() {
 			kd.snapshot.Store(fmt.Sprintf("%s/%s", svc.Namespace, svc.Name), kd.svcToUpstream(*svc))
 		}
 	}
-	klog.Infof("refreshing cache for %d services", kd.snapshot.Len())
-	kd.snapshot.Sync()
+	err := kd.snapshot.Sync()
+	if err != nil {
+		klog.Errorf("snapshot error %v", err)
+		return
+	}
 }
 
 func (kd *KubernetesDiscovery) handleErr(err error, key interface{}) {

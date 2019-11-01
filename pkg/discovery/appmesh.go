@@ -110,11 +110,17 @@ func (ad *AppmeshDiscovery) Run(threadiness int, stopCh <-chan struct{}) {
 }
 
 func (ad *AppmeshDiscovery) sync(key string) error {
-	_, _, err := ad.indexer.GetByKey(key)
+	_, exists, err := ad.indexer.GetByKey(key)
 	if err != nil {
 		klog.Errorf("fetching object with key %s from store failed %v", key, err)
 		return err
 	}
+
+	if !exists {
+		klog.Infof("deleting %s from cache", key)
+		ad.snapshot.Delete(key)
+	}
+
 	ad.syncAll()
 	return nil
 }
@@ -141,8 +147,12 @@ func (ad *AppmeshDiscovery) syncAll() {
 		return
 	}
 
-	klog.Infof("refreshing cache for %d services", ad.snapshot.Len())
-	ad.snapshot.Sync()
+	err = ad.snapshot.Sync()
+	if err != nil {
+		klog.Errorf("snapshot error %v", err)
+		return
+	}
+	klog.Infof("cache updated for %d services", ad.snapshot.Len())
 
 }
 

@@ -80,7 +80,7 @@ spec:
             - name: xds-config
               mountPath: /config
         - name: kxds
-          image: stefanprodan/kxds:0.1.0
+          image: stefanprodan/kxds:v0.2.0
           imagePullPolicy: IfNotPresent
           securityContext:
             capabilities:

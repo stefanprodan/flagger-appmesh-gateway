@@ -31,5 +31,5 @@ version-set:
 	@next="$(TAG)" && \
 	current="$(VERSION)" && \
 	sed -i '' "s/$$current/$$next/g" cmd/kxds/main.go && \
-	sed -i '' "s/kxds:$$current/kxds:$$next/g" kustomize/base/gateway/deployment.yaml && \
+	sed -i '' "s/kxds:v$$current/kxds:v$$next/g" kustomize/base/gateway/deployment.yaml && \
 	echo "Version $$next set in code and kustomization"

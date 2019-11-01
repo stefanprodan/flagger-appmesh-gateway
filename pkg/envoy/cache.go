@@ -5,6 +5,7 @@ import (
 	"k8s.io/klog"
 )
 
+// NewCache creates an Envoy cache
 func NewCache(ads bool) cache.SnapshotCache {
 	return cache.NewSnapshotCache(ads, Hasher{}, log{})
 }

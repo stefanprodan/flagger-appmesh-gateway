@@ -13,6 +13,7 @@ import (
 	"k8s.io/klog"
 )
 
+// Server Envoy management server
 type Server struct {
 	config    cache.SnapshotCache
 	xdsServer xds.Server
@@ -21,6 +22,7 @@ type Server struct {
 	cbSignal  chan struct{}
 }
 
+// NewServer creates an Envoy xDS management server
 func NewServer(port int, config cache.SnapshotCache) *Server {
 	cbSignal := make(chan struct{})
 	cb := &callbacks{
@@ -40,6 +42,7 @@ func NewServer(port int, config cache.SnapshotCache) *Server {
 	}
 }
 
+// Serve starts the Envoy xDS management server
 func (srv *Server) Serve(ctx context.Context) {
 	var options []grpc.ServerOption
 	options = append(options, grpc.MaxConcurrentStreams(1000000))

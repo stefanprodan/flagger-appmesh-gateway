@@ -12,6 +12,7 @@ import (
 	"k8s.io/klog"
 )
 
+// Snapshot manages Envoy clusters and listeners cache snapshots
 type Snapshot struct {
 	version   uint64
 	cache     cache.SnapshotCache
@@ -20,6 +21,7 @@ type Snapshot struct {
 	nodeId    string
 }
 
+// NewSnapshot creates an Envoy cache snapshot manager
 func NewSnapshot(cache cache.SnapshotCache) *Snapshot {
 	return &Snapshot{
 		version:   0,
@@ -28,14 +30,17 @@ func NewSnapshot(cache cache.SnapshotCache) *Snapshot {
 	}
 }
 
+// Store inserts or updates an upstream in the in-memory cache
 func (s *Snapshot) Store(key string, value Upstream) {
 	s.upstreams.Store(key, value)
 }
 
+// Delete removes an upstream from the in-memory cache
 func (s *Snapshot) Delete(key string) {
 	s.upstreams.Delete(key)
 }
 
+// Len returns the number of upstreams stored in the in-memory cache
 func (s *Snapshot) Len() int {
 	var length int
 	s.upstreams.Range(func(_, _ interface{}) bool {
@@ -55,6 +60,8 @@ func (s *Snapshot) getNodeId() (string, error) {
 	return s.cache.GetStatusKeys()[0], nil
 }
 
+// Sync reconciles the in-memory cache of upstreams
+// with the Envoy cache by creating a new snapshot
 func (s *Snapshot) Sync() error {
 	nodeId, err := s.getNodeId()
 	if err != nil {

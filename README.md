@@ -1,5 +1,5 @@
 # appmesh-gateway
-[![CI](https://github.com/stefanprodan/appmesh-gateway/workflows/CI/badge.svg)](https://github.com/stefanprodan/appmesh-gateway/actions)
+[![CI](https://github.com/stefanprodan/appmesh-gateway/workflows/build/badge.svg)](https://github.com/stefanprodan/appmesh-gateway/actions)
 [![report](https://goreportcard.com/badge/github.com/stefanprodan/appmesh-gateway)](https://goreportcard.com/report/github.com/stefanprodan/appmesh-gateway)
 
 App Mesh Gateway is an edge load balancer that exposes applications outside the mesh.
@@ -32,11 +32,34 @@ The gateway registers/de-registers virtual services automatically as they come a
 
 ### Install
 
+Requirements:
+* App Mesh CRDs, controller and inject [installed](https://github.com/aws/eks-charts#app-mesh)
+* A mesh called `appmesh`
+
 Install the API Gateway as NLB in `appmesh-gateway` namespace:
 
 ```sh
 kubectl apply -k github.com/stefanprodan/appmesh-gateway//kustomize/appmesh-gateway
 ```
+
+Wait for the deployment rollout to finish:
+
+```sh
+kubectl -n appmesh-gateway rollout status deploy/appmesh-gateway
+```
+
+When the gateway starts it will create a virtual node. You can verify the install with:
+
+```text
+watch kubectl -n appmesh-gateway describe virtualnode appmesh-gateway
+
+Status:
+  Conditions:
+    Status:                True
+    Type:                  VirtualNodeActive
+```
+
+### Example
 
 Deploy podinfo in the `test` namespace:
 
@@ -60,4 +83,13 @@ Access podinfo on its custom domain:
 
 ```sh
 curl -vH 'Host: podinfo.internal' localhost:8080
+```
+
+Access podinfo using the gateway NLB address:
+
+```sh
+URL="http://$(kubectl -n appmesh-gateway get svc/appmesh-gateway -ojson | \
+jq -r ".status.loadBalancer.ingress[].hostname")"
+
+curl -vH 'Host: podinfo.internal' $URL
 ```

@@ -10,6 +10,9 @@ build:
 test:
 	go test -v -race ./...
 
+go-fmt:
+	gofmt -l pkg/* | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi;
+
 run:
 	go run cmd/appmesh-gateway/*.go --kubeconfig=$$HOME/.kube/config -v=4 \
 	--gateway-mesh=appmesh --gateway-name=gateway --gateway-namespace=appmesh-gateway

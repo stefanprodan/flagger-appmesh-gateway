@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	"github.com/stefanprodan/kxds/pkg/envoy"
+	"github.com/stefanprodan/appmesh-gateway/pkg/envoy"
 )
 
 // KubernetesDiscovery watches Kubernetes for services and
@@ -206,16 +206,16 @@ func (kd *KubernetesDiscovery) svcToUpstream(svc corev1.Service) envoy.Upstream 
 	}
 
 	for key, value := range svc.Annotations {
-		if key == envoy.AnDomain {
+		if key == envoy.GatewayDomain {
 			up.Domains = appendDomain(up.Domains, value)
 		}
-		if key == envoy.AnTimeout {
+		if key == envoy.GatewayTimeout {
 			d, err := time.ParseDuration(value)
 			if err == nil {
 				up.Timeout = d
 			}
 		}
-		if key == envoy.AnRetries {
+		if key == envoy.GatewayRetries {
 			r, err := strconv.Atoi(value)
 			if err == nil {
 				up.Retries = uint32(r)
@@ -238,10 +238,10 @@ func (kd *KubernetesDiscovery) svcIsValid(svc corev1.Service) bool {
 	}
 
 	for key, value := range svc.Annotations {
-		if kd.optIn && key == envoy.AnExpose && value != "true" {
+		if kd.optIn && key == envoy.GatewayExpose && value != "true" {
 			return false
 		}
-		if key == envoy.AnExpose && value == "false" {
+		if key == envoy.GatewayExpose && value == "false" {
 			return false
 		}
 	}

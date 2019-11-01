@@ -20,8 +20,8 @@ spec:
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9797"
-        # Include only the http port in the mesh
-        appmesh.k8s.aws/ports: "9898"
+#        # Include only the http port in the mesh
+#        appmesh.k8s.aws/ports: "9898"
       labels:
         app: podinfo
     spec:

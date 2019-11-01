@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: gateway
-  annotations:
-    envoy.gateway.kubernetes.io/expose: "false"
-spec:
-  type: NodePort
-

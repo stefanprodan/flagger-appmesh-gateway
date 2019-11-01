@@ -1,0 +1,14 @@
+apiVersion: appmesh.k8s.aws/v1beta1
+kind: VirtualNode
+metadata:
+  name: podinfo
+spec:
+  meshName: appmesh
+  serviceDiscovery:
+    dns:
+      hostName: podinfo.test
+  listeners:
+    - portMapping:
+        port: 9898
+        protocol: http
+

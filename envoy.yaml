@@ -7,7 +7,7 @@ admin:
   address:
     socket_address:
       address: 0.0.0.0
-      port_value: 9000
+      port_value: 8081
 
 dynamic_resources:
   ads_config:
@@ -23,7 +23,7 @@ dynamic_resources:
 static_resources:
   clusters:
     - name: xds
-      connect_timeout: 0.30s
+      connect_timeout: 0.50s
       type: static
       http2_protocol_options: {}
       load_assignment:

@@ -8,8 +8,6 @@ COPY . .
 
 RUN go mod download
 
-RUN go test -v -race ./...
-
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o bin/appmesh-gateway cmd/appmesh-gateway/*
 
 FROM alpine:3.10

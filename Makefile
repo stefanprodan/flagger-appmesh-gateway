@@ -10,13 +10,12 @@ build:
 test:
 	go test -v -race ./...
 
-run:
-	go run cmd/appmesh-gateway/*.go kubernetes --kubeconfig=$$HOME/.kube/config \
-		--port-name=http
+go-fmt:
+	gofmt -l pkg/* | grep ".*\.go"; if [ "$$?" = "0" ]; then exit 1; fi;
 
-appmesh:
-	go run cmd/appmesh-gateway/*.go appmesh --kubeconfig=$$HOME/.kube/config \
-		--gateway-mesh=appmesh --gateway-name=gateway --gateway-namespace=appmesh-gateway
+run:
+	go run cmd/appmesh-gateway/*.go --kubeconfig=$$HOME/.kube/config -v=4 \
+	--gateway-mesh=appmesh --gateway-name=gateway --gateway-namespace=appmesh-gateway
 
 envoy:
 	envoy -c envoy.yaml -l info

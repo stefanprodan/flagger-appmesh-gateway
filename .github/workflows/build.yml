@@ -1,13 +1,23 @@
-name: CI
+name: build
 
 on: [push, pull_request]
 
 jobs:
-  kustomize:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Validate manifests
+      - name: Go fmt
+        uses: stefanprodan/kube-tools@v1
+        with:
+          command: |
+            make go-fmt
+      - name: Go test
+        uses: stefanprodan/kube-tools@v1
+        with:
+          command: |
+            make test
+      - name: Validate kustomization
         uses: stefanprodan/kube-tools@v1
         with:
           command: |
@@ -17,7 +27,7 @@ jobs:
             kustomize build ./kustomize/test | kubeval --strict --ignore-missing-schemas
   build:
     runs-on: ubuntu-latest
-    needs: [kustomize]
+    needs: [test]
     steps:
       - uses: actions/checkout@v1
       - name: Build container

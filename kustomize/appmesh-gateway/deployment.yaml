@@ -4,19 +4,11 @@ metadata:
   name: appmesh-gateway
 spec:
   template:
-    metadata:
-      annotations:
-        # exclude inbound traffic on port 8080
-        appmesh.k8s.aws/ports: "444"
-        # exclude egress traffic to KxDS and Kubernetes API
-        appmesh.k8s.aws/egressIgnoredPorts: "18000,22,443"
     spec:
       containers:
-        - name: gateway
+        - name: controller
           command:
             - ./appmesh-gateway
-            - appmesh
-            - --port=18000
             - --gateway-mesh=appmesh
             - --gateway-name=$(POD_SERVICE_ACCOUNT)
             - --gateway-namespace=$(POD_NAMESPACE)

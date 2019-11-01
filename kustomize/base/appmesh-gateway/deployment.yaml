@@ -5,7 +5,6 @@ metadata:
   labels:
     app: appmesh-gateway
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: appmesh-gateway
@@ -21,6 +20,10 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/stats/prometheus"
         prometheus.io/port: "8081"
+        # exclude inbound traffic on port 8080
+        appmesh.k8s.aws/ports: "444"
+        # exclude egress traffic to KxDS and Kubernetes API
+        appmesh.k8s.aws/egressIgnoredPorts: "18000,22,443"
     spec:
       serviceAccountName: appmesh-gateway
       terminationGracePeriodSeconds: 10
@@ -73,16 +76,20 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           resources:
+            limits:
+              memory: 1Gi
             requests:
-              cpu: 10m
-              memory: 32Mi
+              cpu: 100m
+              memory: 128Mi
           volumeMounts:
             - name: xds-config
               mountPath: /config
-        - name: gateway
+        - name: controller
           image: stefanprodan/appmesh-gateway:v0.3.0
           imagePullPolicy: IfNotPresent
           securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 10001
             capabilities:
               drop:
                 - ALL
@@ -90,10 +97,9 @@ spec:
                 - NET_BIND_SERVICE
           command:
             - ./appmesh-gateway
-            - kubernetes
-            - --port=18000
-            - --ads=true
-            - --port-name=http
+            - --gateway-mesh=appmesh
+            - --gateway-name=$(POD_SERVICE_ACCOUNT)
+            - --gateway-namespace=$(POD_NAMESPACE)
           env:
             - name: POD_SERVICE_ACCOUNT
               valueFrom:
@@ -115,6 +121,12 @@ spec:
             initialDelaySeconds: 5
             tcpSocket:
               port: grpc
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              cpu: 10m
+              memory: 32Mi
       volumes:
         - name: xds-config
           configMap:

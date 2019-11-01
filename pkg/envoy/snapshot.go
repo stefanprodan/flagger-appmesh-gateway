@@ -8,6 +8,7 @@ import (
 
 	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
+	"github.com/mitchellh/hashstructure"
 	"k8s.io/klog"
 )
 
@@ -15,6 +16,8 @@ type Snapshot struct {
 	version   uint64
 	cache     cache.SnapshotCache
 	upstreams *sync.Map
+	checksum  uint64
+	nodeId    string
 }
 
 func NewSnapshot(cache cache.SnapshotCache) *Snapshot {
@@ -42,25 +45,48 @@ func (s *Snapshot) Len() int {
 	return length
 }
 
-func (s *Snapshot) Sync() {
-	if len(s.cache.GetStatusKeys()) < 1 {
-		klog.Errorf("cache has no node IDs")
-		return
+func (s *Snapshot) getNodeId() (string, error) {
+	if s.nodeId != "" {
+		return s.nodeId, nil
 	}
-	nodeId := s.cache.GetStatusKeys()[0]
+	if len(s.cache.GetStatusKeys()) < 1 {
+		return "", fmt.Errorf("cache has no node IDs, status keys %d", len(s.cache.GetStatusKeys()))
+	}
+	return s.cache.GetStatusKeys()[0], nil
+}
 
+func (s *Snapshot) Sync() error {
+	nodeId, err := s.getNodeId()
+	if err != nil {
+		return err
+	}
+	upstreams := make(map[string]Upstream)
 	var listeners []cache.Resource
 	var clusters []cache.Resource
 	var vhosts []*route.VirtualHost
 
 	s.upstreams.Range(func(key interface{}, value interface{}) bool {
+		k := key.(string)
 		upstream := value.(Upstream)
+		upstreams[k] = upstream
+		return true
+	})
+
+	checksum, err := hashstructure.Hash(upstreams, nil)
+	if err != nil {
+		return fmt.Errorf("checksum error %v", err)
+	}
+
+	if checksum == s.checksum {
+		return nil
+	}
+
+	for _, upstream := range upstreams {
 		cluster := newCluster(upstream, time.Second)
 		clusters = append(clusters, cluster)
 		vh := newVirtualHost(upstream)
 		vhosts = append(vhosts, &vh)
-		return true
-	})
+	}
 
 	cm := newConnectionManager("local_route", vhosts, 5*time.Second)
 	httpListener, err := newListener("listener_http", "0.0.0.0", 8080, cm)
@@ -68,8 +94,18 @@ func (s *Snapshot) Sync() {
 
 	atomic.AddUint64(&s.version, 1)
 	snapshot := cache.NewSnapshot(fmt.Sprint(s.version), nil, clusters, nil, listeners)
+
+	if err := snapshot.Consistent(); err != nil {
+		return err
+	}
+
 	err = s.cache.SetSnapshot(nodeId, snapshot)
 	if err != nil {
-		klog.Errorf("error while setting snapshot %v", err)
+		return fmt.Errorf("error while setting snapshot %v", err)
 	}
+
+	atomic.StoreUint64(&s.checksum, checksum)
+	klog.Infof("cache updated for %d services, version %d, checksum %d", len(upstreams), s.version, checksum)
+
+	return nil
 }

@@ -8,6 +8,8 @@ COPY . .
 
 RUN go mod download
 
+RUN go test -v -race ./...
+
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o bin/kxds cmd/kxds/*
 
 FROM alpine:3.10

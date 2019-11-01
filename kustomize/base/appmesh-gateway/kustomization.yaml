@@ -4,6 +4,7 @@ resources:
 - account.yaml
 - deployment.yaml
 - service.yaml
+- hpa.yaml
 configMapGenerator:
   - name: appmesh-gateway
     files:

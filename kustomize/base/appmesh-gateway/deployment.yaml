@@ -5,7 +5,6 @@ metadata:
   labels:
     app: appmesh-gateway
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: appmesh-gateway
@@ -77,16 +76,20 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           resources:
+            limits:
+              memory: 1Gi
             requests:
-              cpu: 10m
-              memory: 32Mi
+              cpu: 100m
+              memory: 128Mi
           volumeMounts:
             - name: xds-config
               mountPath: /config
-        - name: gateway
+        - name: controller
           image: stefanprodan/appmesh-gateway:v0.3.0
           imagePullPolicy: IfNotPresent
           securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 10001
             capabilities:
               drop:
                 - ALL
@@ -118,6 +121,12 @@ spec:
             initialDelaySeconds: 5
             tcpSocket:
               port: grpc
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              cpu: 10m
+              memory: 32Mi
       volumes:
         - name: xds-config
           configMap:

@@ -6,7 +6,7 @@ spec:
   template:
     spec:
       containers:
-        - name: gateway
+        - name: controller
           command:
             - ./appmesh-gateway
             - --gateway-mesh=appmesh

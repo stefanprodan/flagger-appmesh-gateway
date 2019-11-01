@@ -3,6 +3,7 @@ module github.com/stefanprodan/appmesh-gateway
 go 1.13
 
 require (
+	github.com/aws/aws-app-mesh-controller-for-k8s v0.2.0
 	github.com/envoyproxy/go-control-plane v0.9.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.3.2
@@ -12,9 +13,17 @@ require (
 	github.com/spf13/cobra v0.0.5
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	google.golang.org/grpc v1.23.0
-	k8s.io/api v0.0.0-20191025225708-5524a3672fbb
+	k8s.io/api v0.0.0-20191025225708-5524a3672fbb // indirect
 	k8s.io/apimachinery v0.0.0-20191025225532-af6325b3a843
-	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20191010214722-8d271d903fe4 // indirect
+)
+
+// Kubernetes 1.15.0
+replace (
+	k8s.io/api => k8s.io/api v0.0.0-20191025225708-5524a3672fbb
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20191025225532-af6325b3a843
+	k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+	k8s.io/utils => k8s.io/utils v0.0.0-20191010214722-8d271d903fe4
 )

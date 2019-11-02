@@ -5,7 +5,6 @@ bases:
   - ../base/appmesh-gateway
 resources:
 - namespace.yaml
-- rbac.yaml
 patchesStrategicMerge:
   - deployment.yaml
   - service.yaml

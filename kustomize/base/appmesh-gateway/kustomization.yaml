@@ -5,6 +5,7 @@ resources:
 - deployment.yaml
 - service.yaml
 - hpa.yaml
+- rbac.yaml
 configMapGenerator:
   - name: appmesh-gateway
     files:

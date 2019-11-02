@@ -20,7 +20,8 @@ jobs:
         with:
           command: |
             echo "build gateway"
-            kustomize build ./kustomize/appmesh-gateway | kubeval --strict --ignore-missing-schemas
+            kustomize build ./kustomize/appmesh-gateway-nlb | kubeval --strict --ignore-missing-schemas
+            kustomize build ./kustomize/appmesh-gateway-nodeport | kubeval --strict --ignore-missing-schemas
             echo "build test"
             kustomize build ./kustomize/test | kubeval --strict --ignore-missing-schemas
   build:
@@ -29,5 +30,4 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Build container
-        run: |
-          make build-container
+        run: make build-container

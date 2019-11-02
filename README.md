@@ -44,7 +44,13 @@ Requirements:
 Install the API Gateway as NLB in `appmesh-gateway` namespace:
 
 ```sh
-kubectl apply -k github.com/stefanprodan/appmesh-gateway//kustomize/appmesh-gateway
+kubectl apply -k github.com/stefanprodan/appmesh-gateway//kustomize/appmesh-gateway-nlb
+```
+
+To run the gateway behind an ALB you can install the NodePort version:
+
+```sh
+kubectl apply -k github.com/stefanprodan/appmesh-gateway//kustomize/appmesh-gateway-nodeport
 ```
 
 Wait for the deployment rollout to finish:

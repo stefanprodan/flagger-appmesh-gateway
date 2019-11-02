@@ -10,6 +10,8 @@ The gateway is composed of:
 * Envoy control plane (xDS gRPC server)
 * Kubernetes controller (service discovery)
 
+![appmesh-gateway](docs/appmesh-gateway-diagram.png)
+
 An application running on App Mesh can be exposed outside the mesh by annotating its virtual service with:
 
 ```yaml

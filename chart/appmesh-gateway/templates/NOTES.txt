@@ -1,1 +1,1 @@
-AWS App Mesh Prometheus installed!
+App Mesh Gateway installed!

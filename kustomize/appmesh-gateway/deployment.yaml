@@ -9,6 +9,7 @@ spec:
         - name: controller
           command:
             - ./appmesh-gateway
+            - --opt-in=true
             - --gateway-mesh=appmesh
             - --gateway-name=$(POD_SERVICE_ACCOUNT)
             - --gateway-namespace=$(POD_NAMESPACE)

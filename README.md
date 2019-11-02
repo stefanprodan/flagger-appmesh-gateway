@@ -3,14 +3,14 @@
 [![report](https://goreportcard.com/badge/github.com/stefanprodan/appmesh-gateway)](https://goreportcard.com/report/github.com/stefanprodan/appmesh-gateway)
 [![release](https://img.shields.io/github/release/stefanprodan/appmesh-gateway/all.svg)](https://github.com/stefanprodan/appmesh-gateway/releases)
 
-App Mesh Gateway is an edge load balancer that exposes applications outside the mesh.
+App Mesh Gateway is an edge L7 load balancer that exposes applications outside the mesh.
 
 The gateway is composed of:
 * [Envoy](https://www.envoyproxy.io/) proxy
 * Envoy control plane xDS server (CDS/RDS/LDS)
 * Kubernetes controller (service discovery)
 
-An App Mesh virtual service can be exposed outside the mesh by annotating the object with:
+An application running on App Mesh can be exposed outside the mesh by annotating its virtual service with:
 
 ```yaml
 apiVersion: appmesh.k8s.aws/v1beta1

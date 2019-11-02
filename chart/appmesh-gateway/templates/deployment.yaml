@@ -57,6 +57,7 @@ spec:
                 - NET_BIND_SERVICE
           command:
             - ./appmesh-gateway
+            - --opt-in={{ .Values.discovery.optIn }}
             - --gateway-mesh={{ .Values.mesh.name }}
             - --gateway-name=$(POD_SERVICE_ACCOUNT)
             - --gateway-namespace=$(POD_NAMESPACE)

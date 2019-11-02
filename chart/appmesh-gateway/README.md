@@ -69,3 +69,4 @@ Parameter | Description | Default
 `hpa.maxReplicas` | number of max replicas | `3`
 `hpa.cpu` |  average total CPU usage per pod (1-100) | `99`
 `hpa.memory` |  average memory usage per pod (100Mi-1Gi) | None
+`discovery.optIn` | `true` if only services with the 'expose' annotation are discoverable | `true`

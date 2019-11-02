@@ -95,6 +95,7 @@ func (vsm *VirtualServiceManager) IsValid(vs appmeshv1.VirtualService) bool {
 	return true
 }
 
+// VirtualServiceFromUnstructured converts an unstructured object to a virtual service
 func (vsm *VirtualServiceManager) VirtualServiceFromUnstructured(obj *unstructured.Unstructured) (*appmeshv1.VirtualService, error) {
 	b, _ := json.Marshal(&obj)
 	var svc appmeshv1.VirtualService

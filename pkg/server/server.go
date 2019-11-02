@@ -69,6 +69,8 @@ func (srv *Server) Serve(ctx context.Context) {
 	grpcServer.GracefulStop()
 }
 
+// Report waits for Envoy to access the xDS server
+// and logs the number of gRPC requests
 func (srv *Server) Report() {
 	<-srv.cbSignal
 	srv.cb.Report()

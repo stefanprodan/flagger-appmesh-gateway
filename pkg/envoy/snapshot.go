@@ -97,6 +97,10 @@ func (s *Snapshot) Sync() error {
 
 	cm := newConnectionManager("local_route", vhosts, 5*time.Second)
 	httpListener, err := newListener("listener_http", "0.0.0.0", 8080, cm)
+	if err != nil {
+		return err
+	}
+
 	listeners = append(listeners, httpListener)
 
 	atomic.AddUint64(&s.version, 1)

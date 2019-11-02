@@ -27,7 +27,7 @@ func NewVirtualServiceManager(client dynamic.Interface, optIn bool) *VirtualServ
 	}
 }
 
-// vsToUpstream converts the App Mesh virtual service to an Upstream
+// ConvertToUpstream converts the App Mesh virtual service to an Upstream
 func (vsm *VirtualServiceManager) ConvertToUpstream(vs appmeshv1.VirtualService) envoy.Upstream {
 	port := uint32(80)
 	for _, value := range vs.Spec.VirtualRouter.Listeners {

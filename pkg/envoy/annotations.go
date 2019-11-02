@@ -3,16 +3,25 @@ package envoy
 import "strconv"
 
 const (
-	GatewayPrefix       = "gateway.appmesh.k8s.aws/"
-	GatewayExpose       = GatewayPrefix + "expose"
-	GatewayDomain       = GatewayPrefix + "domain"
-	GatewayTimeout      = GatewayPrefix + "timeout"
-	GatewayRetries      = GatewayPrefix + "retries"
-	GatewayPrimary      = GatewayPrefix + "primary"
-	GatewayCanary       = GatewayPrefix + "canary"
+	// GatewayPrefix prefix annotation
+	GatewayPrefix = "gateway.appmesh.k8s.aws/"
+	// GatewayExpose expose boolean annotation
+	GatewayExpose = GatewayPrefix + "expose"
+	// GatewayDomain public or internal domain annotation
+	GatewayDomain = GatewayPrefix + "domain"
+	// GatewayTimeout max response duration annotation
+	GatewayTimeout = GatewayPrefix + "timeout"
+	// GatewayRetries number of retries annotation
+	GatewayRetries = GatewayPrefix + "retries"
+	// GatewayPrimary primary virtual service name annotation
+	GatewayPrimary = GatewayPrefix + "primary"
+	// GatewayCanary canary virtual service name annotation
+	GatewayCanary = GatewayPrefix + "canary"
+	// GatewayCanaryWeight traffic weight percentage annotation
 	GatewayCanaryWeight = GatewayPrefix + "canary-weight"
 )
 
+// CanaryFromAnnotations parses the annotations and returns a canary object
 func CanaryFromAnnotations(an map[string]string) *Canary {
 	var primaryCluster string
 	var canaryCluster string

@@ -7,7 +7,7 @@ App Mesh Gateway is an edge L7 load balancer that exposes applications outside t
 
 The gateway is composed of:
 * [Envoy](https://www.envoyproxy.io/) proxy
-* Envoy control plane xDS server (CDS/RDS/LDS)
+* Envoy control plane (xDS gRPC server)
 * Kubernetes controller (service discovery)
 
 An application running on App Mesh can be exposed outside the mesh by annotating its virtual service with:
@@ -19,6 +19,8 @@ metadata:
   name: frontend.test
   annotations:
     gateway.appmesh.k8s.aws/expose: "true"
+    gateway.appmesh.k8s.aws/retries: "5"
+    gateway.appmesh.k8s.aws/timeout: "25s"
     gateway.appmesh.k8s.aws/domain: "frontend.example.com"
 ```
 

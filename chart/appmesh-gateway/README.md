@@ -65,4 +65,7 @@ Parameter | Description | Default
 `mesh.create` | If `true`, create mesh custom resource | `false`
 `mesh.name` | The name of the mesh to use | `global`
 `mesh.discovery` | The service discovery type to use, can be dns or cloudmap | `dns`
-
+`hpa.enabled` | `true` if HPA resource should be created, metrics-server is required | `true`
+`hpa.maxReplicas` | number of max replicas | `3`
+`hpa.cpu` |  average total CPU usage per pod (1-100) | `99`
+`hpa.memory` |  average memory usage per pod (100Mi-1Gi) | None

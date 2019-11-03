@@ -20,6 +20,7 @@ import (
 	"github.com/stefanprodan/appmesh-gateway/pkg/signals"
 )
 
+// VERSION semantic versioning format
 const VERSION = "0.3.0"
 
 var (

@@ -15,6 +15,12 @@ jobs:
         uses: stefanprodan/kube-tools@v1
         with:
           command: make test
+      - name: Validate Helm chart
+        uses: stefanprodan/kube-tools@v1
+        with:
+          helm: 2.15.1
+          command: |
+            helm template chart/appmesh-gateway | kubeval --strict --ignore-missing-schemas
       - name: Validate kustomization
         uses: stefanprodan/kube-tools@v1
         with:

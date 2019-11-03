@@ -2,7 +2,7 @@ apiVersion: v1
 name: appmesh-gateway
 description: App Mesh Gateway Helm chart for Kubernetes
 version: 0.1.0
-appVersion: 0.4.0
+appVersion: 0.3.0
 home: https://github.com/stefanprodan/appmesh-gateway
 icon: https://raw.githubusercontent.com/aws/eks-charts/master/docs/logo/aws.png
 sources:

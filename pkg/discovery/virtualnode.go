@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/klog"
 )
 
 // VirtualNodeManager reconciles the gateway virtual node backend
@@ -31,8 +32,8 @@ func NewVirtualNodeManager(client dynamic.Interface, gatewayMesh string, gateway
 }
 
 // Reconcile creates or updates the virtual node and its backends
-func (vtm *VirtualNodeManager) Reconcile(backends []string) error {
-	vnName := vtm.gatewayName
+func (vnm *VirtualNodeManager) Reconcile(backends []string) error {
+	vnName := vnm.gatewayName
 	var vnBackends []appmeshv1.Backend
 	for _, value := range backends {
 		vnBackends = append(vnBackends, appmeshv1.Backend{
@@ -40,7 +41,7 @@ func (vtm *VirtualNodeManager) Reconcile(backends []string) error {
 		})
 	}
 	spec := appmeshv1.VirtualNodeSpec{
-		MeshName: vtm.gatewayMesh,
+		MeshName: vnm.gatewayMesh,
 		Listeners: []appmeshv1.Listener{
 			{PortMapping: appmeshv1.PortMapping{
 				Port:     444,
@@ -49,7 +50,7 @@ func (vtm *VirtualNodeManager) Reconcile(backends []string) error {
 		},
 		ServiceDiscovery: &appmeshv1.ServiceDiscovery{
 			Dns: &appmeshv1.DnsServiceDiscovery{
-				HostName: fmt.Sprintf("%s.%s", vtm.gatewayName, vtm.gatewayNamespace),
+				HostName: fmt.Sprintf("%s.%s", vnm.gatewayName, vnm.gatewayNamespace),
 			}},
 		Backends: vnBackends,
 	}
@@ -57,7 +58,7 @@ func (vtm *VirtualNodeManager) Reconcile(backends []string) error {
 	vn := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"kind":       "VirtualNode",
-			"apiVersion": "appmesh.k8s.aws/v1beta1",
+			"apiVersion": appmeshv1.SchemeGroupVersion.String(),
 			"metadata": map[string]interface{}{
 				"name": vnName,
 			},
@@ -65,15 +66,15 @@ func (vtm *VirtualNodeManager) Reconcile(backends []string) error {
 		},
 	}
 
-	client := vtm.client.Resource(schema.GroupVersionResource{
+	client := vnm.client.Resource(schema.GroupVersionResource{
 		Group:    "appmesh.k8s.aws",
 		Version:  "v1beta1",
 		Resource: "virtualnodes",
 	})
 
-	_, err := client.Namespace(vtm.gatewayNamespace).Get(vnName, metav1.GetOptions{})
+	_, err := client.Namespace(vnm.gatewayNamespace).Get(vnName, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		_, createErr := client.Namespace(vtm.gatewayNamespace).Create(vn, metav1.CreateOptions{})
+		_, createErr := client.Namespace(vnm.gatewayNamespace).Create(vn, metav1.CreateOptions{})
 		if createErr != nil && !errors.IsNotFound(createErr) {
 			return fmt.Errorf("failed to create gateway virtual node: %v", err)
 		}
@@ -85,7 +86,7 @@ func (vtm *VirtualNodeManager) Reconcile(backends []string) error {
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		gw, err := client.Namespace(vtm.gatewayNamespace).Get(vnName, metav1.GetOptions{})
+		gw, err := client.Namespace(vnm.gatewayNamespace).Get(vnName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -100,7 +101,7 @@ func (vtm *VirtualNodeManager) Reconcile(backends []string) error {
 				"spec": spec,
 			},
 		}
-		_, err = client.Namespace(vtm.gatewayNamespace).Update(vn, metav1.UpdateOptions{})
+		_, err = client.Namespace(vnm.gatewayNamespace).Update(vn, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -110,5 +111,17 @@ func (vtm *VirtualNodeManager) Reconcile(backends []string) error {
 		return fmt.Errorf("failed to update gateway virtual node: %v", retryErr)
 	}
 
+	klog.Infof("virtual node %s updated with %d backends", vnName, len(backends))
+
+	return nil
+}
+
+// CheckAccess verifies if RBAC is allowing virtual nodes read operations
+func (vnm *VirtualNodeManager) CheckAccess() error {
+	vnr, _ := schema.ParseResourceArg("virtualnodes.v1beta1.appmesh.k8s.aws")
+	_, err := vnm.client.Resource(*vnr).Namespace(vnm.gatewayNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
 	return nil
 }

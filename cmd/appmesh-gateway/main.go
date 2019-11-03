@@ -94,10 +94,15 @@ func run(cmd *cobra.Command, args []string) error {
 	klog.Info("waiting for Envoy to connect to the xDS server")
 	srv.Report()
 
-	klog.Info("starting App Mesh discovery workers")
-	vsManager := discovery.NewVirtualServiceManager(client, optIn)
 	vnManager := discovery.NewVirtualNodeManager(client, gatewayMesh, gatewayName, gatewayNamespace)
+	if err := vnManager.CheckAccess(); err != nil {
+		klog.Fatalf("the gateway can't read App Mesh objects, check RBAC, error %v", err)
+	}
+
+	vsManager := discovery.NewVirtualServiceManager(client, optIn)
 	kd := discovery.NewController(client, namespace, snapshot, vsManager, vnManager)
+
+	klog.Info("starting App Mesh discovery workers")
 	kd.Run(2, stopCh)
 
 	return nil

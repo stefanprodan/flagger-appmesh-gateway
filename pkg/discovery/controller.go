@@ -131,7 +131,6 @@ func (ctrl *Controller) syncAll() {
 		}
 	}
 
-	klog.Infof("updating gateway virtual node with %d backends", len(backends))
 	err := ctrl.vnManager.Reconcile(backends)
 	if err != nil {
 		klog.Error(err)

@@ -1,5 +1,5 @@
 TAG?=latest
-VERSION?=$(shell grep 'VERSION' cmd/appmesh-gateway/main.go | awk '{ print $$4 }' | tr -d '"' | head -n1)
+VERSION?=$(shell grep 'const VERSION' cmd/appmesh-gateway/main.go | awk '{ print $$4 }' | tr -d '"' | head -n1)
 NAME:=appmesh-gateway
 DOCKER_REPOSITORY:=stefanprodan
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)

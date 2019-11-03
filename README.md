@@ -6,7 +6,8 @@
 App Mesh Gateway is an edge L7 load balancer that exposes applications outside the mesh.
 
 Features:
-* allows binding a public domain to an internal mesh address
+* allows binding a public or internal domain to a mesh address
+* enables App Mesh client load-balancing for AWS NLB, ALB and Amazon API Gateway
 * allows setting retries polices and timeouts for each service
 * exports metrics in Prometheus format (request rate, error rate and latency)
 * provides access logging for ingress traffic

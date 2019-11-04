@@ -31,6 +31,7 @@ version-set:
 	current="$(VERSION)" && \
 	sed -i '' "s/$$current/$$next/g" cmd/appmesh-gateway/main.go && \
 	sed -i '' "s/tag: v$$current/tag: v$$next/g" chart/appmesh-gateway/values.yaml && \
+	sed -i '' "s/version: $$current/version: $$next/g" chart/appmesh-gateway/Chart.yaml && \
 	sed -i '' "s/appVersion: $$current/appVersion: $$next/g" chart/appmesh-gateway/Chart.yaml && \
 	sed -i '' "s/appmesh-gateway:v$$current/appmesh-gateway:v$$next/g" kustomize/base/appmesh-gateway/deployment.yaml && \
 	echo "Version $$next set in code, chart and kustomization"

@@ -17,7 +17,7 @@ proxy:
 controller:
   image:
     repository: docker.io/stefanprodan/appmesh-gateway
-    tag: v0.4.0
+    tag: v0.5.0
     pullPolicy: IfNotPresent
 
 nameOverride: ""

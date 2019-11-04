@@ -88,7 +88,7 @@ spec:
             - name: appmesh-gateway-config
               mountPath: /config
         - name: controller
-          image: docker.io/stefanprodan/appmesh-gateway:v0.4.0
+          image: docker.io/stefanprodan/appmesh-gateway:v0.5.0
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: true

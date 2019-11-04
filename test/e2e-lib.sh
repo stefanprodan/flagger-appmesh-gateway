@@ -14,7 +14,7 @@ function errorf() {
 }
 
 function waitForDeployment() {
-  infof "Waiting for deployment $1"
+  infof "Testing deployment $1"
   retries=10
   count=0
   ok=false
@@ -27,12 +27,12 @@ function waitForDeployment() {
     fi
   done
 
-  kubectl -n $2 rollout status deployment/$1 --timeout=1m >&3
+  kubectl -n $2 rollout status deployment/$1 --timeout=1m
   infof "✔ deployment/$1 test passed"
 }
 
 function waitForService() {
-  infof "Waiting for service $1"
+  infof "Testing service $1"
   retries=10
   count=0
   ok=false
@@ -48,7 +48,7 @@ function waitForService() {
 }
 
 function waitForVirtualNode() {
-  infof "Waiting for virtual node $1"
+  infof "Testing virtual node $1"
   retries=10
   count=0
   ok=false
@@ -63,8 +63,24 @@ function waitForVirtualNode() {
     infof "✔ service/$1 test passed"
 }
 
+function waitForMesh() {
+  infof "Waiting for mesh $1"
+  retries=10
+  count=0
+  ok=false
+  until $ok; do
+    kubectl -n $2 get mesh/$1 && ok=true || ok=false
+    sleep 6
+    count=$(($count + 1))
+    if [[ $count -eq $retries ]]; then
+      errorf "No more retries left"
+    fi
+  done
+    infof "✔ mesh/$1 installed"
+}
+
 function applyCRDs() {
-  kubectl apply -k github.com/aws/eks-charts/stable/appmesh-controller//crds?ref=master >&3
+  kubectl apply -k github.com/aws/eks-charts/stable/appmesh-controller//crds?ref=master
 }
 
 function applyMesh() {

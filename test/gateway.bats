@@ -12,6 +12,7 @@ fi
 
 load ${REPO_ROOT}/test/e2e-lib.sh
 
+mesh=appmesh
 name=appmesh-gateway
 namespace=appmesh-gateway
 
@@ -19,6 +20,7 @@ function setup() {
   infof "Installing prerequisites"
   applyCRDs
   applyMesh
+  waitForMesh $mesh $namespace
 }
 
 @test "App Mesh Gateway install" {

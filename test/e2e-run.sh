@@ -14,7 +14,7 @@ fi
 function installBats() {
   cd /tmp
   curl -sSL https://github.com/bats-core/bats-core/archive/v${BATS_VERSION}.tar.gz -o bats.tar.gz
-  tar -xvf bats.tar.gz --strip 1
+  tar -xf bats.tar.gz --strip 1
 }
 
 function main() {

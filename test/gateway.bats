@@ -87,9 +87,5 @@ function setup() {
 }
 
 function teardown() {
-  infof "Printing container logs"
-  kubectl -n $namespace logs -l app.kubernetes.io/part-of=appmesh >&3 || true
-
-  infof "Listing pods"
-  kubectl -n $namespace get pods >&3 || true
+  kubectl delete ns $namespace || true
 }

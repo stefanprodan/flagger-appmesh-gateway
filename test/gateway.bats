@@ -5,10 +5,7 @@
 set -o errexit
 
 export REPO_ROOT=$(git rev-parse --show-toplevel)
-
-if [[ "${KUBECONFIG}" == "" ]]; then
-  export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
-fi
+export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 
 load ${REPO_ROOT}/test/e2e-lib.sh
 
@@ -23,18 +20,18 @@ function setup() {
 }
 
 @test "App Mesh Gateway" {
-  # install tests
+  # run kustomization for the locally built image
   kubectl apply -k ${REPO_ROOT}/kustomize/appmesh-gateway-nodeport
+  kubectl -n $namespace set image deployment/$name controller=test/appmesh-gateway:latest
+
+  # run install tests
   waitForService $name $namespace
   waitForDeployment $name $namespace
   waitForVirtualNode $name $namespace
 
-  # discovery tests
+  # run discovery tests
   kubectl apply -k ${REPO_ROOT}/kustomize/test
   waitForVirtualService "podinfo.test" "test"
   waitForVirtualNodeBackend $name $namespace "podinfo.test"
 }
 
-#function teardown() {
-#  kubectl delete ns $namespace || true
-#}

@@ -8,6 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - uses: engineerd/setup-kind@v0.1.0
+      - run: test/e2e-build.sh
       - run: test/e2e-run.sh
       - if: failure()
         run: test/e2e-logs.sh

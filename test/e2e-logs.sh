@@ -5,10 +5,8 @@
 set -o errexit
 
 export REPO_ROOT=$(git rev-parse --show-toplevel)
+export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 
-if [[ "${KUBECONFIG}" == "" ]]; then
-  export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
-fi
 
 name=appmesh-gateway
 namespace=appmesh-gateway

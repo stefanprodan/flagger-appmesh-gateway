@@ -7,7 +7,7 @@ const (
 	GatewayPrefix = "gateway.appmesh.k8s.aws/"
 	// GatewayExpose expose boolean annotation
 	GatewayExpose = GatewayPrefix + "expose"
-	// GatewayDomain public or internal domain annotation
+	// GatewayDomain annotation with a comma separated list of public or internal domains
 	GatewayDomain = GatewayPrefix + "domain"
 	// GatewayTimeout max response duration annotation
 	GatewayTimeout = GatewayPrefix + "timeout"

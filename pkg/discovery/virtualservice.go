@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	appmeshv1 "github.com/aws/aws-app-mesh-controller-for-k8s/pkg/apis/appmesh/v1beta1"
@@ -58,7 +59,12 @@ func (vsm *VirtualServiceManager) ConvertToUpstream(vs appmeshv1.VirtualService)
 
 	for key, value := range vs.Annotations {
 		if key == envoy.GatewayDomain {
-			up.Domains = appendDomain(up.Domains, value)
+			for _, domain := range strings.Split(value, ",") {
+				domain = strings.TrimSpace(domain)
+				if domain != "" {
+					up.Domains = appendDomain(up.Domains, domain)
+				}
+			}
 		}
 		if key == envoy.GatewayTimeout {
 			d, err := time.ParseDuration(value)

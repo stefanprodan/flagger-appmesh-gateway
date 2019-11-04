@@ -33,7 +33,7 @@ metadata:
     gateway.appmesh.k8s.aws/expose: "true"
     gateway.appmesh.k8s.aws/retries: "5"
     gateway.appmesh.k8s.aws/timeout: "25s"
-    gateway.appmesh.k8s.aws/domain: "frontend.example.com"
+    gateway.appmesh.k8s.aws/domain: "example.com,www.example.com"
 ```
 
 If you want to expose the service inside the Kubernetes cluster you can omit the domain annotation.

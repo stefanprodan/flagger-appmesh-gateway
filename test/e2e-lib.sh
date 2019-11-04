@@ -47,22 +47,6 @@ function waitForService() {
     infof "✔ service/$1 test passed"
 }
 
-function waitForVirtualNode() {
-  infof "Testing virtual node $1"
-  retries=10
-  count=0
-  ok=false
-  until $ok; do
-    kubectl -n $2 get virtualnode/$1 && ok=true || ok=false
-    sleep 6
-    count=$(($count + 1))
-    if [[ $count -eq $retries ]]; then
-      errorf "No more retries left"
-    fi
-  done
-    infof "✔ service/$1 test passed"
-}
-
 function waitForMesh() {
   infof "Waiting for mesh $1"
   retries=10
@@ -77,6 +61,54 @@ function waitForMesh() {
     fi
   done
     infof "✔ mesh/$1 installed"
+}
+
+function waitForVirtualNode() {
+  infof "Testing virtual node $1"
+  retries=10
+  count=0
+  ok=false
+  until $ok; do
+    kubectl -n $2 get virtualnode/$1 && ok=true || ok=false
+    sleep 6
+    count=$(($count + 1))
+    if [[ $count -eq $retries ]]; then
+      errorf "No more retries left"
+    fi
+  done
+    infof "✔ virtualnode/$1 test passed"
+}
+
+function waitForVirtualNodeBackend() {
+  infof "Testing virtual node backend $1"
+  retries=10
+  count=0
+  ok=false
+  until $ok; do
+    kubectl -n $2 get virtualnode/$1 -oyaml | grep $3 && ok=true || ok=false
+    sleep 6
+    count=$(($count + 1))
+    if [[ $count -eq $retries ]]; then
+      errorf "No more retries left"
+    fi
+  done
+    infof "✔ virtualnode/$1 backend $3 test passed"
+}
+
+function waitForVirtualService() {
+  infof "Testing virtual service $1"
+  retries=10
+  count=0
+  ok=false
+  until $ok; do
+    kubectl -n $2 get virtualservice/$1 && ok=true || ok=false
+    sleep 6
+    count=$(($count + 1))
+    if [[ $count -eq $retries ]]; then
+      errorf "No more retries left"
+    fi
+  done
+    infof "✔ virtualservice/$1 test passed"
 }
 
 function applyCRDs() {

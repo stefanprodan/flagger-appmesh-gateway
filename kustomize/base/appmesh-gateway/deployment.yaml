@@ -16,7 +16,6 @@ spec:
     metadata:
       labels:
         app: appmesh-gateway
-        app.kubernetes.io/part-of: appmesh
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/stats/prometheus"

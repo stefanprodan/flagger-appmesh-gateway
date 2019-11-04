@@ -17,19 +17,24 @@ name=appmesh-gateway
 namespace=appmesh-gateway
 
 function setup() {
-  infof "Installing prerequisites"
   applyCRDs
   applyMesh
   waitForMesh $mesh $namespace
 }
 
-@test "App Mesh Gateway install" {
+@test "App Mesh Gateway" {
+  # install tests
   kubectl apply -k ${REPO_ROOT}/kustomize/appmesh-gateway-nodeport
   waitForService $name $namespace
   waitForDeployment $name $namespace
   waitForVirtualNode $name $namespace
+
+  # discovery tests
+  kubectl apply -k ${REPO_ROOT}/kustomize/test
+  waitForVirtualService "podinfo.test" "test"
+  waitForVirtualNodeBackend $name $namespace "podinfo.test"
 }
 
-function teardown() {
-  kubectl delete ns $namespace || true
-}
+#function teardown() {
+#  kubectl delete ns $namespace || true
+#}

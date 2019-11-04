@@ -1,0 +1,11 @@
+name: e2e
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: engineerd/setup-kind@v0.1.0
+      - run: test/e2e-run.sh

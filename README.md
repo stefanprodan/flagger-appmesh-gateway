@@ -1,5 +1,6 @@
 # appmesh-gateway
-[![CI](https://github.com/stefanprodan/appmesh-gateway/workflows/build/badge.svg)](https://github.com/stefanprodan/appmesh-gateway/actions)
+[![build](https://github.com/stefanprodan/appmesh-gateway/workflows/build/badge.svg)](https://github.com/stefanprodan/appmesh-gateway/actions)
+[![e2e](https://github.com/stefanprodan/appmesh-gateway/workflows/e2e/badge.svg)](https://github.com/stefanprodan/appmesh-gateway/actions)
 [![report](https://goreportcard.com/badge/github.com/stefanprodan/appmesh-gateway)](https://goreportcard.com/report/github.com/stefanprodan/appmesh-gateway)
 [![release](https://img.shields.io/github/release/stefanprodan/appmesh-gateway/all.svg)](https://github.com/stefanprodan/appmesh-gateway/releases)
 

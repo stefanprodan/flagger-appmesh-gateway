@@ -6,15 +6,18 @@
 
 App Mesh Gateway is an edge L7 load balancer that exposes applications outside the mesh.
 
+**Note** that this is a specialised ingress solution for application running on EKS and App Mesh only.
+If you are looking for an Envoy-powered API Gateway for Kubernetes check out [Gloo by Solo.io](https://www.solo.io/gloo).
+
 Features:
+* allows running canary deployments and A/B testing with [Flagger](https://flagger.app) 
+for user-facing web applications and APIs
 * allows binding a public or internal domain to a mesh address
 * enables App Mesh client load-balancing for AWS NLB, ALB and Amazon API Gateway
 * allows setting retries polices and timeouts for each service
 * exports metrics in Prometheus format (request rate, error rate and latency)
 * provides access logging for ingress traffic
-* tags incoming requests and facilitates distributed tracing 
-* allows running canary deployments and A/B testing with [Flagger](https://flagger.app) 
-for user-facing web applications and APIs
+* tags incoming requests and facilitates distributed tracing
 
 The gateway is composed of:
 * [Envoy](https://www.envoyproxy.io/) proxy

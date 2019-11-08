@@ -7,6 +7,6 @@ resources:
 - hpa.yaml
 - rbac.yaml
 configMapGenerator:
-  - name: appmesh-gateway
+  - name: flagger-appmesh-gateway
     files:
       - envoy.yaml

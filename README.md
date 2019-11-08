@@ -1,10 +1,10 @@
-# appmesh-gateway
-[![build](https://github.com/stefanprodan/appmesh-gateway/workflows/build/badge.svg)](https://github.com/stefanprodan/appmesh-gateway/actions)
-[![e2e](https://github.com/stefanprodan/appmesh-gateway/workflows/e2e/badge.svg)](https://github.com/stefanprodan/appmesh-gateway/actions)
-[![report](https://goreportcard.com/badge/github.com/stefanprodan/appmesh-gateway)](https://goreportcard.com/report/github.com/stefanprodan/appmesh-gateway)
-[![release](https://img.shields.io/github/release/stefanprodan/appmesh-gateway/all.svg)](https://github.com/stefanprodan/appmesh-gateway/releases)
+# flagger-appmesh-gateway
+[![build](https://github.com/stefanprodan/flagger-appmesh-gateway/workflows/build/badge.svg)](https://github.com/stefanprodan/flagger-appmesh-gateway/actions)
+[![e2e](https://github.com/stefanprodan/flagger-appmesh-gateway/workflows/e2e/badge.svg)](https://github.com/stefanprodan/flagger-appmesh-gateway/actions)
+[![report](https://goreportcard.com/badge/github.com/stefanprodan/flagger-appmesh-gateway)](https://goreportcard.com/report/github.com/stefanprodan/flagger-appmesh-gateway)
+[![release](https://img.shields.io/github/release/stefanprodan/flagger-appmesh-gateway/all.svg)](https://github.com/stefanprodan/flagger-appmesh-gateway/releases)
 
-App Mesh Gateway is an edge L7 load balancer that exposes applications outside the mesh.
+Flagger App Mesh Gateway is an edge L7 load balancer that exposes applications outside the mesh.
 
 **Note** that this is a specialised ingress solution for application running on EKS and App Mesh only.
 If you are looking for an Envoy-powered API Gateway for Kubernetes check out [Gloo by Solo.io](https://www.solo.io/gloo).
@@ -24,7 +24,7 @@ The gateway is composed of:
 * Envoy control plane (xDS gRPC server)
 * Kubernetes controller (service discovery)
 
-![appmesh-gateway](docs/appmesh-gateway-diagram.png)
+![flagger-appmesh-gateway](docs/appmesh-gateway-diagram.png)
 
 An application running on App Mesh can be exposed outside the mesh by annotating its virtual service with:
 
@@ -58,25 +58,25 @@ Requirements:
 Install the API Gateway as NLB in `appmesh-gateway` namespace:
 
 ```sh
-kubectl apply -k github.com/stefanprodan/appmesh-gateway//kustomize/appmesh-gateway-nlb
+kubectl apply -k github.com/stefanprodan/flagger-appmesh-gateway//kustomize/nlb
 ```
 
 To run the gateway behind an ALB you can install the NodePort version:
 
 ```sh
-kubectl apply -k github.com/stefanprodan/appmesh-gateway//kustomize/appmesh-gateway-nodeport
+kubectl apply -k github.com/stefanprodan/flagger-appmesh-gateway//kustomize/nodeport
 ```
 
 Wait for the deployment rollout to finish:
 
 ```sh
-kubectl -n appmesh-gateway rollout status deploy/appmesh-gateway
+kubectl -n appmesh-gateway rollout status deploy/flagger-appmesh-gateway
 ```
 
 When the gateway starts it will create a virtual node. You can verify the install with:
 
 ```text
-watch kubectl -n appmesh-gateway describe virtualnode appmesh-gateway
+watch kubectl -n appmesh-gateway describe virtualnode flagger-appmesh-gateway
 
 Status:
   Conditions:
@@ -89,13 +89,13 @@ Status:
 Deploy podinfo in the `test` namespace:
 
 ```sh
-kubectl -n test apply -k github.com/stefanprodan/appmesh-gateway//kustomize/test
+kubectl -n test apply -k github.com/stefanprodan/flagger-appmesh-gateway//kustomize/test
 ```
 
 Port forward to the gateway:
 
 ```sh
-kubectl -n appmesh-gateway port-forward svc/appmesh-gateway 8080:80
+kubectl -n appmesh-gateway port-forward svc/flagger-appmesh-gateway 8080:80
 ```
 
 Access the podinfo API by setting the host header to `podinfo.test`:
@@ -113,7 +113,7 @@ curl -vH 'Host: podinfo.internal' localhost:8080
 Access podinfo using the gateway NLB address:
 
 ```sh
-URL="http://$(kubectl -n appmesh-gateway get svc/appmesh-gateway -ojson | \
+URL="http://$(kubectl -n appmesh-gateway get svc/flagger-appmesh-gateway -ojson | \
 jq -r ".status.loadBalancer.ingress[].hostname")"
 
 curl -vH 'Host: podinfo.internal' $URL

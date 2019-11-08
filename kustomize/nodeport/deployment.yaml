@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: appmesh-gateway
+  name: flagger-appmesh-gateway
 spec:
   template:
     spec:
       containers:
         - name: controller
           command:
-            - ./appmesh-gateway
+            - ./flagger-appmesh-gateway
             - --opt-in=true
             - --gateway-mesh=appmesh
             - --gateway-name=$(POD_SERVICE_ACCOUNT)

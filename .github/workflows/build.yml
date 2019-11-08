@@ -15,19 +15,13 @@ jobs:
         uses: stefanprodan/kube-tools@v1
         with:
           command: make test
-      - name: Validate Helm chart
-        uses: stefanprodan/kube-tools@v1
-        with:
-          helm: 2.15.1
-          command: |
-            helm template chart/appmesh-gateway | kubeval --strict --ignore-missing-schemas
       - name: Validate kustomization
         uses: stefanprodan/kube-tools@v1
         with:
           command: |
             echo "build gateway"
-            kustomize build ./kustomize/appmesh-gateway-nlb | kubeval --strict --ignore-missing-schemas
-            kustomize build ./kustomize/appmesh-gateway-nodeport | kubeval --strict --ignore-missing-schemas
+            kustomize build ./kustomize/nlb | kubeval --strict --ignore-missing-schemas
+            kustomize build ./kustomize/nodeport | kubeval --strict --ignore-missing-schemas
             echo "build test"
             kustomize build ./kustomize/test | kubeval --strict --ignore-missing-schemas
   build:

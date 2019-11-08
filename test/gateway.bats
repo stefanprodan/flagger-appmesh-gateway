@@ -10,7 +10,7 @@ export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 load ${REPO_ROOT}/test/e2e-lib.sh
 
 mesh=appmesh
-name=appmesh-gateway
+name=flagger-appmesh-gateway
 namespace=appmesh-gateway
 
 function setup() {
@@ -21,8 +21,8 @@ function setup() {
 
 @test "App Mesh Gateway" {
   # run kustomization for the locally built image
-  kubectl apply -k ${REPO_ROOT}/kustomize/appmesh-gateway-nodeport
-  kubectl -n $namespace set image deployment/$name controller=test/appmesh-gateway:latest
+  kubectl apply -k ${REPO_ROOT}/kustomize/nodeport
+  kubectl -n $namespace set image deployment/$name controller=test/flagger-appmesh-gateway:latest
 
   # run install tests
   waitForService $name $namespace

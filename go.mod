@@ -1,4 +1,4 @@
-module github.com/stefanprodan/appmesh-gateway
+module github.com/stefanprodan/flagger-appmesh-gateway
 
 go 1.13
 

@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/stefanprodan/appmesh-gateway/pkg/envoy"
+	"github.com/stefanprodan/flagger-appmesh-gateway/pkg/envoy"
 )
 
 // VirtualServiceManager transforms virtual service to upstreams

@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	"github.com/stefanprodan/appmesh-gateway/pkg/envoy"
+	"github.com/stefanprodan/flagger-appmesh-gateway/pkg/envoy"
 )
 
 // Controller watches Kubernetes for App Mesh virtual services and

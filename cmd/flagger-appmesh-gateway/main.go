@@ -14,14 +14,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 
-	"github.com/stefanprodan/appmesh-gateway/pkg/discovery"
-	"github.com/stefanprodan/appmesh-gateway/pkg/envoy"
-	"github.com/stefanprodan/appmesh-gateway/pkg/server"
-	"github.com/stefanprodan/appmesh-gateway/pkg/signals"
+	"github.com/stefanprodan/flagger-appmesh-gateway/pkg/discovery"
+	"github.com/stefanprodan/flagger-appmesh-gateway/pkg/envoy"
+	"github.com/stefanprodan/flagger-appmesh-gateway/pkg/server"
+	"github.com/stefanprodan/flagger-appmesh-gateway/pkg/signals"
 )
 
 // VERSION semantic versioning format
-const VERSION = "0.5.0"
+const VERSION = "1.0.0"
 
 var (
 	masterURL        string

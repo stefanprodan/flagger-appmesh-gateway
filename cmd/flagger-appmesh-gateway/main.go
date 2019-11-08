@@ -21,7 +21,7 @@ import (
 )
 
 // VERSION semantic versioning format
-const VERSION = "0.5.0"
+const VERSION = "1.0.0"
 
 var (
 	masterURL        string

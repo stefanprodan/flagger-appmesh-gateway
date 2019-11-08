@@ -4,7 +4,7 @@
 [![report](https://goreportcard.com/badge/github.com/stefanprodan/flagger-appmesh-gateway)](https://goreportcard.com/report/github.com/stefanprodan/flagger-appmesh-gateway)
 [![release](https://img.shields.io/github/release/stefanprodan/flagger-appmesh-gateway/all.svg)](https://github.com/stefanprodan/flagger-appmesh-gateway/releases)
 
-Flagger App Mesh Gateway is an edge L7 load balancer that exposes applications outside the mesh.
+Flagger Gateway for AWS App Mesh is an edge L7 load balancer that exposes applications outside the mesh.
 
 **Note** that this is a specialised ingress solution for application running on EKS and App Mesh only.
 If you are looking for an Envoy-powered API Gateway for Kubernetes check out [Gloo by Solo.io](https://www.solo.io/gloo).

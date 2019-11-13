@@ -47,5 +47,6 @@ func newConnectionManager(routeName string, vhosts []*route.VirtualHost, drainTi
 		HttpFilters: []*hcm.HttpFilter{{
 			Name: wellknown.Router,
 		}},
+		UseRemoteAddress: &wrappers.BoolValue{Value: true},
 	}
 }

@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: engineerd/setup-kind@v0.1.0
+      - uses: engineerd/setup-kind@v0.2.0
       - run: test/e2e-build.sh
       - run: test/e2e-run.sh
       - if: failure()

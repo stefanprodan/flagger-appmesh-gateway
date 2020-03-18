@@ -33,5 +33,37 @@ function setup() {
   kubectl apply -k ${REPO_ROOT}/kustomize/test
   waitForVirtualService "podinfo.test" "test"
   waitForVirtualNodeBackend $name $namespace "podinfo.test"
+
+cat <<EOF | kubectl -n test apply -f -
+apiVersion: appmesh.k8s.aws/v1beta1
+kind: VirtualService
+metadata:
+  name: podinfo-v2.test
+  annotations:
+    gateway.appmesh.k8s.aws/expose: "true"
+    gateway.appmesh.k8s.aws/timeout: "25s"
+    gateway.appmesh.k8s.aws/retries: "5"
+    gateway.appmesh.k8s.aws/domain: "podinfo-v2.internal"
+spec:
+  meshName: appmesh
+  virtualRouter:
+    name: podinfo
+    listeners:
+      - portMapping:
+          port: 9898
+          protocol: http
+  routes:
+    - name: podinfo
+      http:
+        action:
+          weightedTargets:
+            - virtualNodeName: podinfo
+              weight: 100
+        match:
+          prefix: /
+EOF
+
+  waitForVirtualService "podinfo-v2.test" "test"
+  waitForVirtualNodeBackend $name $namespace "podinfo-v2.test"
 }
 

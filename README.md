@@ -6,8 +6,7 @@
 
 Flagger Gateway for AWS App Mesh is an edge L7 load balancer that exposes applications outside the mesh.
 
-**Note** that this is a specialised ingress solution for application running on EKS and App Mesh only.
-If you are looking for an Envoy-powered API Gateway for Kubernetes check out [Gloo by Solo.io](https://www.solo.io/gloo).
+**Note** this project has been deprecated in favour of the official [AWS AppMesh Gateway](https://aws.amazon.com/about-aws/whats-new/2020/07/aws-app-mesh-launches-ingress-support-for-virtual-gateways/).
 
 Features:
 * allows running canary deployments and A/B testing with [Flagger](https://flagger.app) 
